@@ -1,0 +1,170 @@
+#
+#       Copyright (c) Stratus Technologies Bermuda Ltd., 2008.
+#       All Rights Reserved. Unpublished rights reserved
+#       under the copyright laws of the United States.
+# 
+#       This program is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU Lesser General Public License as published
+#       by the Free Software Foundation; version 2.1 only. with the special
+#       exception on linking described in file LICENSE.
+#
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU Lesser General Public License for more details.
+
+#   This file contains common defaults and functions used by
+#   XenSource HA stub scripts
+
+default_cf=/etc/xensource/xhad.conf
+scriptdir=/opt/xensource/xha
+tmpfile=/tmp/xhastub.$$
+
+#
+#   Common functions
+#
+
+function error {
+    (echo -n "`date` "; echo $1) 1>&2
+    exit $2
+}
+
+[ `id -u` = "0" ] || error "Must be run in root privilege" 1
+
+ha_null 2> /dev/null || error "PATH is not properly setup" 1
+
+function param {
+    if [ $# -gt 0 ]; then
+        echo $1
+        exit 0
+    else
+        error "Missing parameter(s)" 1
+    fi
+}
+
+#   storage to remember important configuration
+#   (necessary only because we do not have the HA daemon)
+
+CFPATH=$scriptdir/cfpath
+SFPATH=$scriptdir/sfpath
+LOCALHOST=$scriptdir/localhost
+
+function set_xhad_status {
+    echo $1 > $SFPATH
+    echo $2 > $LOCALHOST
+    echo $3 > $CFPATH
+}
+
+function get_xhad_status {
+    [ -f $SFPATH -a -f $LOCALHOST ] || error "ha_start_daemon has not been done" 1
+    # get state-file name
+    read _sf < $SFPATH || exit $?
+    read _localhost < $LOCALHOST || exit $?
+    read _cf < $CFPATH || exit $?
+}
+
+function remove_xhad_status {
+    rm -f $SFPATH $LOCALHOST $CFPATH
+}
+
+function getcf {
+    cf=$default_cf
+    if [ $# -gt 0 ]; then
+        c=`param $*` && shift
+        if [ $c = "-C" -o $c = "-c" ]; then
+            cf=`param $*` || error "No config-file name following -C" 1
+        else
+            error "Unknown option directive $c" 1
+        fi
+    fi
+    echo $cf
+    exit 0
+}
+    
+function getsf {
+    for i in `cfread $1`
+    do
+        case $i in
+        statefile_path=*)
+            echo $i | sed 's/^.*=//'
+            exit 0
+            ;;
+        *)
+            ;;
+        esac
+    done
+    error "State-File is not specified" 1
+}
+
+function gethostlist {
+    _host0=
+    _host1=
+    _localhost_index=
+    for i in `cfread $1`
+    do
+        case $i in
+        host\[0\].HostId=*)
+            _host0=`echo $i | sed 's/^.*=//'`
+            ;;
+        host\[1\].HostId=*)
+            _host1=`echo $i | sed 's/^.*=//'`
+            ;;
+        host\[*\].HostId=*)
+            error "Too large pool (> 2 node)" 1
+            ;;
+        localhost_index=*)
+            _localhost_index=`echo $i | sed 's/^.*=//'`
+            ;;
+        esac
+    done
+
+    if [ $_host0 = "" -o $_host1 = "" ]; then
+        error "Exactly 2 hosts must be defined in the config-file" 1
+    fi
+    
+    case $_localhost_index in
+    "0")
+        _localhost=$_host0
+        ;;
+    "1")
+        _localhost=$_host1
+        ;;
+    *)
+        error "Local host is not defined" 1
+        ;;
+    esac
+}
+
+# writeglobal $sf $state $host0_uuid $host1_uuid $master_uuid
+
+function writeglobal {
+    (echo $2 $3 $4 $5) | dd of=$1 oflag=direct conv=notrunc,sync bs=4096 seek=0 count=1 status=noxfer > /dev/null 2>&1
+    exit 0
+}
+
+# writespecific $sf $host_index $host_state $host_uuid
+
+function writespecific {
+    offset=`expr $2 + 1`
+    (echo $3 $4) | dd of=$1 oflag=direct conv=notrunc,sync bs=4096 seek=$offset count=1 status=noxfer > /dev/null 2>&1
+    exit 0
+}
+
+# readglobal $sf
+
+function readglobal {
+    dd if=$1 iflag=direct ibs=4096 skip=0 count=1 status=noxfer 2> /dev/null > $tmpfile
+    read _state _host0 _host1 _master < $tmpfile
+    rm -f $tmpfile
+}
+
+# readspecific $sf $host_index
+
+function readspecific {
+    offset=`expr $2 + 1`
+    dd if=$1 iflag=direct ibs=4096 skip=$offset count=1 status=noxfer 2> /dev/null > $tmpfile
+    read _state _localhost < $tmpfile
+    rm -f $tmpfile
+}
+
+

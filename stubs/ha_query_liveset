@@ -1,0 +1,163 @@
+#!/bin/bash
+
+#       Copyright (c) Stratus Technologies Bermuda Ltd., 2008.
+#       All Rights Reserved. Unpublished rights reserved
+#       under the copyright laws of the United States.
+# 
+#       This program is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU Lesser General Public License as published
+#       by the Free Software Foundation; version 2.1 only. with the special
+#       exception on linking described in file LICENSE.
+#
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU Lesser General Public License for more details.
+
+#
+#   stub
+#   ha_stop_daemon
+#
+
+. /opt/xensource/xha/ha_stubrc
+
+get_xhad_status
+    sf=$_sf
+    localhost=$_localhost
+    cf=$_cf
+
+# read the pool state
+readglobal $sf
+    state=$_state
+    host0=$_host0
+    host1=$_host1
+    master=$_master
+
+if [ $state != "active" ]; then
+    error "Invalid pool state" 1
+fi
+
+readspecific $sf 0
+    hoststate0=$_state
+    localhost0=$_localhost
+
+readspecific $sf 1
+    hoststate1=$_state
+    localhost1=$_localhost
+
+master0=FALSE
+master1=FALSE
+if [ "$host0" == "$master" ]; then
+    master0=TRUE
+elif [ "$host1" == "$master" ]; then
+    master1=TRUE
+fi
+
+live0=FALSE
+timevalue0=-1
+live1=FALSE
+timevalue1=-1
+livelist=
+
+if [ $hoststate0 == "online" ]; then
+    live0=TRUE
+    timevalue0=3000
+    livelist="$host0"
+fi
+if [ $hoststate1 == "online" ]; then
+    live1=TRUE
+    timevalue1=3000
+    if [ "$livelist" != "" ]; then
+        livelist="$livelist\n$host1"
+    else
+        livelist="$host1"
+    fi
+fi
+
+sed -e "s/REPLACE_LOCAL_HOST/$localhost/g" -e "s/REPLACE_HOST0/$host0/g" -e "s/REPLACE_HOST1/$host1/g" -e "s/REPLACE_LIVE0/$live0/g" -e "s/REPLACE_LIVE1/$live1/g" -e "s/REPLACE_MASTER0/$master0/g" -e "s/REPLACE_MASTER1/$master1/g" -e "s/REPLACE_LIVELIST/$livelist/g" -e "s/REPLACE_TIMEVALUE0/$timevalue0/g" -e "s/REPLACE_TIMEVALUE1/$timevalue1/g" <<EOFMARKER
+<?xml version="1.0" encoding="UTF-8"?>
+<ha_liveset_info version="1.0">
+  <status>Online</status>
+  <localhost>
+    <HostID>REPLACE_LOCAL_HOST</HostID>
+  </localhost>
+  <host>
+    <HostID>REPLACE_HOST0</HostID> 
+    <liveness>REPLACE_LIVE0</liveness>
+    <master>REPLACE_MASTER0</master>
+    <statefile_access>TRUE</statefile_access>
+    <statefile_corrupted>FALSE</statefile_corrupted>
+    <excluded>FALSE</excluded>
+  </host>
+  <host>
+    <HostID>REPLACE_HOST1</HostID> 
+    <liveness>REPLACE_LIVE1</liveness>
+    <master>REPLACE_MASTER1</master>
+    <statefile_access>TRUE</statefile_access>
+    <statefile_corrupted>FALSE</statefile_corrupted>
+    <excluded>FALSE</excluded>
+  </host>
+  <raw_status_on_local_host>
+    <statefile_latency>3000</statefile_latency>
+    <statefile_latency_max>40000</statefile_latency_max>
+    <statefile_latency_min>10</statefile_latency_min>
+    <heartbeat_latency>3010</heartbeat_latency>
+    <heartbeat_latency_max>3155</heartbeat_latency_max>
+    <heartbeat_latency_min>3001</heartbeat_latency_min>
+    <Xapi_healthcheck_latency>230</Xapi_healthcheck_latency>
+    <Xapi_healthcheck_latency_max>3000</Xapi_healthcheck_latency_max>
+    <Xapi_healthcheck_latency_min>50</Xapi_healthcheck_latency_min>
+    <host_raw_data>
+      <HostID>REPLACE_HOST0</HostID> 
+      <time_since_last_update_on_statefile>REPLACE_TIMEVALUE0</time_since_last_update_on_statefile>
+      <time_since_last_heartbeat>REPLACE_TIMEVALUE0</time_since_last_heartbeat>
+      <time_since_xapi_restart_first_attempted>-1</time_since_xapi_restart_first_attempted>
+      <heartbeat_active_list_on_heartbeat>
+        REPLACE_LIVELIST
+      </heartbeat_active_list_on_heartbeat>
+      <heartbeat_active_list_on_statefile>
+        REPLACE_LIVELIST
+      </heartbeat_active_list_on_statefile>
+      <statefile_active_list_on_heartbeat>
+        REPLACE_LIVELIST
+      </statefile_active_list_on_heartbeat>
+      <statefile_active_list_on_statefile>
+        REPLACE_LIVELIST
+      </statefile_active_list_on_statefile>
+    </host_raw_data>
+    <host_raw_data>
+      <HostID>REPLACE_HOST1</HostID>
+      <time_since_last_update_on_statefile>REPLACE_TIMEVALUE1</time_since_last_update_on_statefile>
+      <time_since_last_heartbeat>REPLACE_TIMEVALUE1</time_since_last_heartbeat>
+      <time_since_xapi_restart_first_attempted>-1</time_since_xapi_restart_first_attempted>
+      <heartbeat_active_list_on_heartbeat>	
+        REPLACE_LIVELIST
+      </heartbeat_active_list_on_heartbeat>
+      <heartbeat_active_list_on_statefile>
+        REPLACE_LIVELIST
+      </heartbeat_active_list_on_statefile>
+      <statefile_active_list_on_heartbeat>
+        REPLACE_LIVELIST
+      </statefile_active_list_on_heartbeat>
+      <statefile_active_list_on_statefile>
+        REPLACE_LIVELIST
+      </statefile_active_list_on_statefile>
+    </host_raw_data>
+  <timeout>
+     <T1>30000</T1> 
+     <T2>180000</T2>
+     <T3>180000</T3>
+     <Wh>30000</Wh>
+     <Ws>210000</Ws>
+  </timeout>
+  <warning_on_local_host>
+     <statefile_lost>FALSE</statefile_lost>
+     <heartbeat_approaching_timeout>FALSE</heartbeat_approaching_timeout>
+     <statefile_approaching_timeout>FALSE</statefile_approaching_timeout>
+     <Xapi_healthcheck_approaching_timeout>FALSE</Xapi_healthcheck_approaching_timeout>
+     <network_bonding_error>FALSE</network_bonding_error>
+  </warning_on_local_host>
+</ha_liveset_info>
+EOFMARKER
+#
+exit 0

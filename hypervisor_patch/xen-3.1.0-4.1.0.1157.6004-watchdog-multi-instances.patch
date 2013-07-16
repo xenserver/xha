@@ -1,0 +1,173 @@
+diff -rc src/xen-3.1.0/xen/common/keyhandler.c src-watchdog/xen-3.1.0/xen/common/keyhandler.c
+*** src/xen-3.1.0/xen/common/keyhandler.c	2008-02-15 04:00:27.000000000 +0900
+--- src-watchdog/xen-3.1.0/xen/common/keyhandler.c	2008-02-27 17:50:54.000000000 +0900
+***************
+*** 162,167 ****
+--- 162,168 ----
+  
+      for_each_domain ( d )
+      {
++         unsigned int i;
+          printk("General information for domain %u:\n", d->domain_id);
+          cpuset_print(tmpstr, sizeof(tmpstr), d->domain_dirty_cpumask);
+          printk("    refcnt=%d nr_pages=%d xenheap_pages=%d "
+***************
+*** 175,183 ****
+                 d->handle[ 8], d->handle[ 9], d->handle[10], d->handle[11],
+                 d->handle[12], d->handle[13], d->handle[14], d->handle[15],
+                 d->vm_assist);
+!         if ( active_timer(&d->watchdog_timer) )
+!             printk("    watchdog expires in %d seconds\n",
+!                    (u32)((d->watchdog_timer.expires - NOW()) >> 30));
+  
+          arch_dump_domain_info(d);
+  
+--- 176,187 ----
+                 d->handle[ 8], d->handle[ 9], d->handle[10], d->handle[11],
+                 d->handle[12], d->handle[13], d->handle[14], d->handle[15],
+                 d->vm_assist);
+!         for (i = 0 ; i < NR_WATCHDOG_TIMERS; i++) {
+!             if ( active_timer(&d->watchdog_timer[i]) )
+!                 printk("    watchdog[%d] expires in %d seconds\n",
+!                        i,
+!                        (u32)((d->watchdog_timer[i].expires - NOW()) >> 30));
+!         }
+  
+          arch_dump_domain_info(d);
+  
+diff -rc src/xen-3.1.0/xen/common/schedule.c src-watchdog/xen-3.1.0/xen/common/schedule.c
+*** src/xen-3.1.0/xen/common/schedule.c	2008-02-15 04:00:27.000000000 +0900
+--- src-watchdog/xen-3.1.0/xen/common/schedule.c	2008-02-27 17:53:59.000000000 +0900
+***************
+*** 394,400 ****
+  
+  static void watchdog_timeout(void *data)
+  {
+!     // struct domain *d = data;
+      extern void __serial_rx(char c, struct cpu_user_regs *regs);
+      extern int xen_rx;
+  
+--- 394,400 ----
+  
+  static void watchdog_timeout(void *data)
+  {
+!     struct domain *d = data;
+      extern void __serial_rx(char c, struct cpu_user_regs *regs);
+      extern int xen_rx;
+  
+***************
+*** 407,441 ****
+      __serial_rx('w', NULL);
+      __serial_rx(0x0f, NULL);
+      __serial_rx('m', NULL);
+!     // domain_shutdown(d, SHUTDOWN_watchdog);
+  }
+  
+  static long do_watchdog(struct domain *d, uint32_t id, uint32_t timeout)
+  {
+  
+      if ( id == 0 )
+      {
+!         if ( active_timer(&d->watchdog_timer) )
+              return -EEXIST;
+  
+!         init_timer(&d->watchdog_timer, watchdog_timeout, (void *)d, 0);
+!         set_timer(&d->watchdog_timer, NOW() + SECONDS(timeout));
+!         return 1;
+      }
+  
+!     if ( id != 1 )
+          return -EINVAL;
+  
+!     if ( !active_timer(&d->watchdog_timer) )
+          return -EEXIST;
+  
+      if ( timeout == 0 )
+      {
+!         stop_timer(&d->watchdog_timer);
+          return 0;
+      }
+  
+!     set_timer(&d->watchdog_timer, NOW() + SECONDS(timeout));
+  
+      return 0;
+  }
+--- 407,451 ----
+      __serial_rx('w', NULL);
+      __serial_rx(0x0f, NULL);
+      __serial_rx('m', NULL);
+!     domain_shutdown(d, SHUTDOWN_watchdog);
+  }
+  
+  static long do_watchdog(struct domain *d, uint32_t id, uint32_t timeout)
+  {
++     unsigned int   i, newid = 0;
+  
+      if ( id == 0 )
+      {
+!         newid = 0;
+!         for (i = 0; i < NR_WATCHDOG_TIMERS; i++) {
+!             if ( !active_timer(&d->watchdog_timer[i]) ) {
+!                 /* found */
+!                 newid = i + 1;
+!                 break;
+!             }
+!         }
+!         if ( newid == 0 ) {
+              return -EEXIST;
++         }
+  
+!         init_timer(&d->watchdog_timer[newid - 1], watchdog_timeout, (void *)d, 0);
+!         set_timer(&d->watchdog_timer[newid - 1], NOW() + SECONDS(timeout));
+!         return (newid);
+      }
+  
+!     if ( id > NR_WATCHDOG_TIMERS )
+          return -EINVAL;
+  
+!     if ( !active_timer(&d->watchdog_timer[id - 1]) )
+          return -EEXIST;
+  
+      if ( timeout == 0 )
+      {
+!         stop_timer(&d->watchdog_timer[id - 1]);
+          return 0;
+      }
+  
+!     set_timer(&d->watchdog_timer[id - 1], NOW() + SECONDS(timeout));
+  
+      return 0;
+  }
+diff -rc src/xen-3.1.0/xen/include/xen/sched.h src-watchdog/xen-3.1.0/xen/include/xen/sched.h
+*** src/xen-3.1.0/xen/include/xen/sched.h	2008-02-15 04:00:27.000000000 +0900
+--- src-watchdog/xen-3.1.0/xen/include/xen/sched.h	2008-02-27 17:52:54.000000000 +0900
+***************
+*** 148,153 ****
+--- 148,157 ----
+  #define LOCK_BIGLOCK(_d) spin_lock_recursive(&(_d)->big_lock)
+  #define UNLOCK_BIGLOCK(_d) spin_unlock_recursive(&(_d)->big_lock)
+  
++ 
++ /* Number of supported watchdog timers per domain */
++ #define NR_WATCHDOG_TIMERS 2
++ 
+  struct domain
+  {
+      domid_t          domain_id;
+***************
+*** 234,240 ****
+  
+      /* Domain watchdog. */
+      spinlock_t watchdog_lock;
+!     struct timer watchdog_timer;
+  
+      struct rcu_head rcu;
+  
+--- 238,244 ----
+  
+      /* Domain watchdog. */
+      spinlock_t watchdog_lock;
+!     struct timer watchdog_timer[NR_WATCHDOG_TIMERS];
+  
+      struct rcu_head rcu;
+  

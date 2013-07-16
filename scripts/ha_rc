@@ -1,0 +1,88 @@
+#!/bin/bash
+
+#       Copyright (c) Stratus Technologies Bermuda Ltd., 2008.
+#       All Rights Reserved. Unpublished rights reserved
+#       under the copyright laws of the United States.
+# 
+#       This program is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU Lesser General Public License as published
+#       by the Free Software Foundation; version 2.1 only. with the special
+#       exception on linking described in file LICENSE.
+#
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU Lesser General Public License for more details.
+
+#   This file contains common defaults and functions used by
+#   XenSource HA scripts
+
+configfile=/etc/xensource/xhad.conf
+scriptdir=/opt/xensource/xha
+daemon_wd=$scriptdir
+
+#
+#   Include error number constants
+#
+. $scriptdir/ha_errnorc
+
+#
+#   Common functions
+#
+
+
+#
+# error "message1" "message2" exit_status
+#
+#   print "message1" and "message2" to stderr and exit with exit_status
+#
+
+function error {
+    (echo -n "`date` "; echo $1 $2 "($3)" ) 1>&2
+    exit $3
+}
+
+#
+# param
+#
+#   print next parameter to stdout, if it's available.
+#   Otherwise print fails with $MTC_EXIT_INVALID_PARAMETER
+#
+
+function param {
+    if [ $# -gt 0 ]; then
+        echo $1
+        exit 0
+    else
+        error "Missing parameter(s)" "" $MTC_EXIT_INVALID_PARAMETER
+    fi
+}
+
+#
+#   getcf
+#
+#       print config-file name to stdout,
+#       or fail with $MTC_EXIT_INVALID_PARAMETER
+#
+
+function getcf {
+    cf=$configfile
+    if [ $# -gt 0 ]; then
+        c=`param $*` && shift
+        if [ $c = "-C" -o $c = "-c" ]; then
+            cf=`param $*` || error "No config-file name following -C" "" $MTC_EXIT_INVALID_PARAMETER
+        else
+            error "Unknown option directive $c" "" $MTC_EXIT_INVALID_PARAMETER
+        fi
+    fi
+    echo $cf
+    exit 0
+}
+
+#
+#   Initial sanity checks
+#
+
+[ `id -u` = "0" ] || error "Must be run in root privilege" "" $MTC_EXIT_INVALID_ENVIRONMENT
+
+ha_null 2> /dev/null || error "PATH is not properly setup" "" $MTC_EXIT_INVALID_ENVIRONMENT

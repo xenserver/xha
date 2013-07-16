@@ -1,0 +1,123 @@
+xHA messages left in syslog
+
+Error messages not listed below may appear in the syslog. They are listed in
+include/mtcerrno.def.
+
+./daemon/bond_mon.c:
+
+    NOTICE      "BM: bonding status has changed to DEGRADED.\n"
+    WARNING     "BM: bonding status has changed to DEGRADED.\n"
+    
+        The heartbeat network is redundantly configured with two physical
+        NICs (bonded) and one of them has gone offline, but the network
+        is still working with the remaining NIC.
+    
+    ERR         "BM: bonding status has changed to ERROR.\n");
+
+        The heartbeat network is redundantly configured with two physical
+        NICs (bonded) and both of them have gone offline. Therefore the
+        heartbeat network is now inaccessible.
+    
+    NOTICE      "BM: bonding status has changed to GOOD.\n");
+
+        The heartbeat network is redundantly configured with two physical
+        NICs (bonded) and both of them are now working properly.
+
+./daemon/main.c:
+
+    NOTICE      "HA daemon started - built at " BUILD_DATE " - " BUILD_ID "\n");
+        
+        The HA daemon has started.
+        Ex.
+            Apr 11 16:04:30 JST 2008 [notice] HA daemon started - built at Apr 11 16:04:10 JST 2008 - d7343a31c486
+
+    NOTICE      "HA daemon started shutdown process.\n");
+    
+        The HA daemon has started its graceful shutdown procedure.
+    
+    NOTICE      "HA daemon completed shutdown process.\n");
+
+        The HA daemon has completed its graceful shutdown procedure.
+
+./daemon/sc_func.c:
+
+    NOTICE      "clear_excluded returns SUCCESS.\n");
+    
+        clear_excluded operation has been completed successfully.
+    
+    NOTICE      "disarm_fencing returns SUCCESS.\n");
+
+        disarm_fencing operation has been completed successfully.
+
+    NOTICE      "propose_master returns %s.\n",
+    
+        propose_master operation has been completed successfully.
+
+    NOTICE      "set_excluded returns SUCCESS.\n");
+
+        set_excluded operation has been completed successfully.
+
+    NOTICE      "set_pool_state \"%s\" returns SUCCESS.\n", pool_state_string);
+    
+        set_pool_state operation has been completed successfully.
+        %s will be substituted with init, active or invalid.
+
+    NOTICE      "Excluded flag is set while HA daemon is operating.\n");
+    NOTICE      "HA daemon terminated.\n");
+
+        The HA daemon will be immediately terminated, since the excluded flag is set
+        for the local host.
+
+./daemon/sc_sv.c:
+
+    ERR         "Script service received an invalid message.\n");
+    
+        The HA daemon received an invalid message through the UNIX domain socket. This might
+        mean a local process has attempted improperly to connect to the HA daemon.
+
+./daemon/sm.c:
+
+    NOTICE      "Liveset has been updated.  new liveset = (%s)\n", psm->current_liveset);
+
+        The liveset has been updated.
+        New liveset is printed as string of '0' (offline) or '1' (online) in the host index order,
+        determined by alphabetical order of host UUIDs.
+    
+    NOTICE      "Start Criteria: Changing the pool state to ACTIVE.\n");
+    
+        The pool has transitioned from INIT state to to ACTIVE state, since this is the first
+        successful boot after HA was enabled.
+    
+    NOTICE      "Excluded flag is cleared successfully.\n");
+    
+        Excluded flag for the local host has been claered during boot process.
+    
+    NOTICE      "The local host has transitioned to online state.\n");
+
+        The local host has become a member of the liveset.
+
+./daemon/statefile.c:
+
+    NOTICE      "HA daemon successfuly started acceesing the State-File.\n");
+    
+        The HA daemon successfully completed its first access the State-File.
+    
+    NOTICE      "SF: State-File version mismatch. Initiating termination process.\n");
+
+        The version of the State-File is not compatible with the daemon. The HA daemon must exit.
+
+    NOTICE      "SF: State-File generation UUID mismatch. Initiating termination process.\n");
+    
+        The config-file and the State-File do not agree on the generation UUID of the pool configuration.
+        The HA daemon must exit.
+    
+./daemon/watchdog.c:
+
+    ERR         "Watchdog should have expired id=%d label=%s.\n",
+    
+        The watchdog should have expired and this mesage should not have been logged.
+        This means the watchdog timers did not work properly.
+    
+    NOTICE      "Watchdog is expiring soon id=%d label=%s.\n",
+    
+        The watchdog timer is expiring.

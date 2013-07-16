@@ -1,0 +1,202 @@
+//
+//  MODULE: mtcerrno.h
+//
+
+#ifndef MTCERRNO_H
+#define MTCERRNO_H (1)    // Set flag indicating this file was included
+
+//
+//++
+//      Copyright (c) Stratus Technologies Bermuda Ltd., 2008.
+//      All Rights Reserved. Unpublished rights reserved
+//      under the copyright laws of the United States.
+//
+//      This program is free software; you can redistribute it and/or modify
+//      it under the terms of the GNU Lesser General Public License as published
+//      by the Free Software Foundation; version 2.1 only. with the special
+//      exception on linking described in file LICENSE.
+//
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU Lesser General Public License for more details.
+//
+//
+//  DESCRIPTION:
+//
+//      This header file defines the intrinsic data types used by Marathon 
+//      components. This header file must stand alone, and must not use any 
+//      Linux specific definitions from other header files.
+//
+//  AUTHORS:
+//
+//      Satoshi Watanabe
+//
+//  CREATION DATE: March 14, 2008
+//
+//  DESIGN ISSUES:
+//
+//  PORTABILITY ISSUES:
+//
+//--
+//
+
+int
+status_to_exit(
+    MTC_STATUS status);
+
+char *
+status_to_message(
+    MTC_STATUS status);
+
+#ifdef MTC_NEED_ERROR_TABLE
+#define errentry(name, code, mapped_code, message)    {(name), (code), (mapped_code), (message)},
+static struct {
+	char	    *name;
+	MTC_STATUS	status;
+	int         exit_code;
+    char        *message;
+} mtc_errtable[] = {
+#else
+#define errentry(name, code, mapped_code, message)
+#endif
+
+//  Exit codes  (< 128)
+
+errdef, MTC_EXIT_SUCCESS,                       0,  0,  "",
+errdef, MTC_EXIT_INVALID_PARAMETER,             1,  0,  "Invalid parameter",            //  general invalid parameter
+errdef, MTC_EXIT_SYSTEM_ERROR,                  2,  0,  "Fatal system error",           //  general irrecoverable system level errors
+errdef, MTC_EXIT_TRANSIENT_SYSTEM_ERROR,        3,  0,  "Transient system error",       //  general transient system level errors
+errdef, MTC_EXIT_WATCHDOG_ERROR,                4,  0,  "Watchdog error",               //  watchdog errors
+errdef, MTC_EXIT_IMPROPER_LICENSE,              5,  0,  "Improper license",             //  xha is not licensed
+errdef, MTC_EXIT_CAN_NOT_READ_CONFIG_FILE,      6,  0,  "Config-file is inaccessible",  //  can not read config-file
+errdef, MTC_EXIT_INVALID_CONFIG_FILE,           7,  0,  "Invalid config-file contents", //  invalid config-file contents
+errdef, MTC_EXIT_CAN_NOT_ACCESS_STATEFILE,      8,  0,  "State-File is inaccessible",   //  can not access state-file (not provisioned)
+errdef, MTC_EXIT_INVALID_STATE_FILE,            9,  0,  "Invalid State-File contents",  //  invalid state-file contents
+errdef, MTC_EXIT_GENERATION_UUID_MISMATCH,      10, 0,  "Generation UUID mismatch",     //  generation uuid mismatch (between config-file and state-file)
+errdef, MTC_EXIT_INVALID_POOL_STATE,            11, 0,  "Invalid pool state",           //  invalid pool state
+errdef, MTC_EXIT_BOOTJOIN_TIMEOUT,              12, 0,  "Join timeout during start",    //  boot-join timeout (cound not be a member of the livset)
+errdef, MTC_EXIT_CAN_NOT_JOIN_EXISTING_LIVESET, 13, 0,  "Join is not allowed",          //  could not join an existing liveset (due to partition)
+errdef, MTC_EXIT_DAEMON_IS_NOT_PRESENT,         14, 0,  "Daemon is not present",        //  daemon is not present
+errdef, MTC_EXIT_DAEMON_IS_PRESENT,             15, 0,  "Daemon is (already) present",  //  daemon is already present
+errdef, MTC_EXIT_INVALID_ENVIRONMENT,           16, 0,  "Invalid operation environment",//  invalid environment to run xha scripts
+errdef, MTC_EXIT_INVALID_LOCALHOST_STATE,       17, 0,  "Invalid local host state",     //  invalid localhost state
+errdef, MTC_EXIT_BOOT_BLOCKED_BY_EXCLUDED,      18, 0,  "Start failed",                 //  boot blocked by excluded flag (maybe an liveset surviing by SR-2)
+errdef, MTC_EXIT_SET_EXCLUDED,                  19, 0,  "Exclude flag is set while the daemon is operating", //  excluded flag is set while HA daemon running.
+
+errdef, MTC_EXIT_INTERNAL_BUG,                  127, 0, "Internal bug",    //  internal bug of xha
+
+//  Main
+
+errdef, MTC_SUCCESS,                            0,                MTC_EXIT_SUCCESS,             "",
+errdef, MTC_ERROR_SYSTEM_LEVEL_FAILURE,         (1000 + 100 + 0), MTC_EXIT_SYSTEM_ERROR,        "System level failure",
+errdef, MTC_ERROR_DAEMON_EXIST,                 (1000 + 100 + 1), MTC_EXIT_DAEMON_IS_PRESENT,   "Daemon is already present",
+errdef, MTC_ERROR_IMPROPER_LICENSE,             (1000 + 100 + 2), MTC_EXIT_IMPROPER_LICENSE,    "Improper license",
+errdef, MTC_ERROR_INVALID_PARAMETER,            (1000 + 100 + 3), MTC_EXIT_INVALID_PARAMETER,   "Invalid parameter",
+
+//  Config-file read
+
+errdef, MTC_ERROR_CF_INVALID_PARAMETER,         (1000 + 200 + 0), MTC_EXIT_INTERNAL_BUG,        "Invalid parameter",
+errdef, MTC_ERROR_CF_INVALID_FORMAT,            (1000 + 200 + 1), MTC_EXIT_INVALID_CONFIG_FILE, "Invalid config-file format",
+errdef, MTC_ERROR_CF_OPEN,                      (1000 + 200 + 2), MTC_EXIT_CAN_NOT_READ_CONFIG_FILE, "Could not open the config-file",
+
+//  Common Object Manager
+
+errdef, MTC_ERROR_COM_INSUFFICIENT_RESOURCE,    (1000 + 300 + 0), MTC_EXIT_TRANSIENT_SYSTEM_ERROR, "Insufficient resource",
+errdef, MTC_ERROR_COM_PTHREAD,                  (1000 + 300 + 1), MTC_EXIT_SYSTEM_ERROR,        "Pthread error",
+errdef, MTC_ERROR_COM_CALLBACK_NOT_EXIST,       (1000 + 300 + 2), MTC_EXIT_INTERNAL_BUG,        "Callback does not exist",
+errdef, MTC_ERROR_COM_INVALID_HANDLE,           (1000 + 300 + 3), MTC_EXIT_INTERNAL_BUG,        "Invalid handle",
+
+//  Watchdog
+
+errdef, MTC_ERROR_WD_INSUFFICIENT_RESOURCE,     (1000 + 400 + 0), MTC_EXIT_TRANSIENT_SYSTEM_ERROR, "Insufficient resource",
+errdef, MTC_ERROR_WD_OPEN,                      (1000 + 400 + 1), MTC_EXIT_WATCHDOG_ERROR,      "Could not open a watchdog instance",
+errdef, MTC_ERROR_WD_INSTANCE_UNAVAILABLE,      (1000 + 400 + 2), MTC_EXIT_WATCHDOG_ERROR,      "No watchdog instance is available",
+errdef, MTC_ERROR_WD_INVALID_HANDLE,            (1000 + 400 + 3), MTC_EXIT_INTERNAL_BUG,        "Invalid handle",
+
+//  State-File
+
+errdef, MTC_ERROR_SF_INSUFFICIENT_RESOURCE,     (1000 + 500 + 0), MTC_EXIT_TRANSIENT_SYSTEM_ERROR,  "Insufficient resource",
+errdef, MTC_ERROR_SF_OPEN,                      (1000 + 500 + 1), MTC_EXIT_CAN_NOT_ACCESS_STATEFILE,"Could not open the State-File",
+errdef, MTC_ERROR_SF_IO_ERROR,                  (1000 + 500 + 2), MTC_EXIT_CAN_NOT_ACCESS_STATEFILE,"Error in State-File access",
+errdef, MTC_ERROR_SF_CORRUPTION,                (1000 + 500 + 3), MTC_EXIT_INVALID_STATE_FILE,      "Corrupted State-File",
+errdef, MTC_ERROR_SF_VERSION_MISMATCH,          (1000 + 500 + 4), MTC_EXIT_INVALID_STATE_FILE,      "State-File version mismatch",
+errdef, MTC_ERROR_SF_PTHREAD,                   (1000 + 500 + 5), MTC_EXIT_SYSTEM_ERROR,            "Pthread error",
+errdef, MTC_ERROR_SF_PENDING_WRITE,             (1000 + 500 + 6), -1,                               "",
+errdef, MTC_ERROR_SF_GEN_UUID,                  (1000 + 500 + 7), MTC_EXIT_GENERATION_UUID_MISMATCH,"Generation UUID mismatch",
+errdef, MTC_ERROR_SF_INVALID_POOL_STATE,        (1000 + 500 + 8), MTC_EXIT_INVALID_POOL_STATE,      "Invalid pool state",
+
+
+//  Script
+
+errdef, MTC_ERROR_SC_INSUFFICIENT_RESOURCE,     (1000 + 600 + 0), MTC_EXIT_TRANSIENT_SYSTEM_ERROR,  "Insufficient resource",
+errdef, MTC_ERROR_SC_SOCKET,                    (1000 + 600 + 1), MTC_EXIT_SYSTEM_ERROR,            "Socket error",
+errdef, MTC_ERROR_SC_PTHREAD,                   (1000 + 600 + 2), MTC_EXIT_SYSTEM_ERROR,            "Pthread error",
+errdef, MTC_ERROR_SC_CONNECT_TO_DAEMON,         (1000 + 600 + 3), MTC_EXIT_DAEMON_IS_NOT_PRESENT,   "Could not connect to the daemon",
+errdef, MTC_ERROR_SC_READ_ERROR,                (1000 + 600 + 4), MTC_EXIT_TRANSIENT_SYSTEM_ERROR,  "Could not read from the socket",
+errdef, MTC_ERROR_SC_WRITE_ERROR,               (1000 + 600 + 5), MTC_EXIT_TRANSIENT_SYSTEM_ERROR,  "Could not write to the socket",
+errdef, MTC_ERROR_SC_IMPROPER_DATA,             (1000 + 600 + 6), MTC_EXIT_INTERNAL_BUG,            "Wrong data received",
+errdef, MTC_ERROR_SC_INVALID_LOCALHOST_STATE,   (1000 + 600 + 7), MTC_EXIT_INVALID_LOCALHOST_STATE, "Invalid local host state",
+errdef, MTC_ERROR_SC_INVALID_PARAMETER,         (1000 + 600 + 8), MTC_EXIT_INVALID_PARAMETER,       "Invalid parameter",
+errdef, MTC_ERROR_SC_STATEFILE_ACCESS,          (1000 + 600 + 9), MTC_EXIT_CAN_NOT_ACCESS_STATEFILE,"Could not access the State-File",
+errdef, MTC_ERROR_SC_INVALID_POOL_STATE,        (1000 + 600 + 10), MTC_EXIT_INVALID_POOL_STATE,     "Invalid pool state",
+
+//  Heartbeat
+
+errdef, MTC_ERROR_HB_INSUFFICIENT_RESOURCE,     (1000 + 700 + 0), MTC_EXIT_TRANSIENT_SYSTEM_ERROR,  "Insufficient resource",
+errdef, MTC_ERROR_HB_SOCKET,                    (1000 + 700 + 1), MTC_EXIT_SYSTEM_ERROR,            "Socket error",
+errdef, MTC_ERROR_HB_PTHREAD,                   (1000 + 700 + 2), MTC_EXIT_SYSTEM_ERROR,            "Pthread error",
+errdef, MTC_ERROR_HB_FENCEREQUESTED,            (1000 + 700 + 3), MTC_EXIT_SYSTEM_ERROR,            "Fence is requested",
+
+//  Log
+
+errdef, MTC_ERROR_LOG_PTHREAD,                  (1000 + 800 + 0), MTC_EXIT_SYSTEM_ERROR,            "Pthread error",
+
+//  State Manager
+
+errdef, MTC_ERROR_SM_PTHREAD,                   (1000 + 900 + 0), MTC_EXIT_SYSTEM_ERROR,            "Pthread error",
+errdef, MTC_ERROR_SM_BOOT_TIMEOUT,              (1000 + 900 + 1), MTC_EXIT_BOOTJOIN_TIMEOUT,        "Start timeout",
+errdef, MTC_ERROR_SM_NOSTATEFILE,               (1000 + 900 + 2), MTC_EXIT_CAN_NOT_ACCESS_STATEFILE,"Could not access the State-File",
+errdef, MTC_ERROR_SM_JOIN_FAILED,               (1000 + 900 + 3), MTC_EXIT_CAN_NOT_JOIN_EXISTING_LIVESET, "Could not join the existing liveset",
+errdef, MTC_ERROR_SM_FAULTHANDLER_TIMEOUT,      (1000 + 900 + 4), MTC_EXIT_SYSTEM_ERROR,                  "Fault handler timeout",
+errdef, MTC_ERROR_SM_SURVIVALRULE_FAILED,       (1000 + 900 + 5), MTC_EXIT_SYSTEM_ERROR,                  "Survival rule failed",
+errdef, MTC_ERROR_SM_INVALID_POOL_STATE,        (1000 + 900 + 6), MTC_EXIT_INVALID_POOL_STATE,      "Invalid pool state",
+errdef, MTC_ERROR_SM_ENABLE_TIMEOUT,            (1000 + 900 + 7), MTC_EXIT_BOOTJOIN_TIMEOUT,        "Start timeout",
+errdef, MTC_ERROR_SM_BOOT_BLOCKED_BY_EXCLUDED,  (1000 + 900 + 8), MTC_EXIT_BOOT_BLOCKED_BY_EXCLUDED,"Start failed",
+errdef, MTC_ERROR_SM_BOOT_FAILED,               (1000 + 900 + 9), MTC_EXIT_CAN_NOT_JOIN_EXISTING_LIVESET,"Start failed",
+errdef, MTC_ERROR_SM_INVALID_INIT_POOL_STATE,   (1000 + 900 + 10), MTC_EXIT_INVALID_POOL_STATE,     "Invalid pool state",
+
+//  Xapi monitor
+
+errdef, MTC_ERROR_XAPIMON_XAPI_FAILED,          (1000 + 1000 + 0), MTC_EXIT_SYSTEM_ERROR,           "Xapi has gone offline",
+errdef, MTC_ERROR_XAPIMON_PTHREAD,              (1000 + 1000 + 1), MTC_EXIT_SYSTEM_ERROR,           "Pthread error",
+errdef, MTC_ERROR_XAPIMON_PIPE,                 (1000 + 1000 + 2), MTC_EXIT_SYSTEM_ERROR,           "Pipe error",
+errdef, MTC_ERROR_XAPIMON_FORK,                 (1000 + 1000 + 3), MTC_EXIT_SYSTEM_ERROR,           "Fork failed",
+
+//  Lock Manager
+
+errdef, MTC_ERROR_LM_PTHREAD,                   (1000 + 1100 + 0), MTC_EXIT_SYSTEM_ERROR,           "Pthread error",
+
+//  Bond monitor
+
+errdef, MTC_ERROR_BM_PTHREAD,                   (1000 + 1200 + 0), MTC_EXIT_SYSTEM_ERROR,           "Pthread error",
+
+//  Host Weight
+
+errdef, MTC_ERROR_WEIGHT_OPEN,                  (1000 + 1300 + 0), MTC_EXIT_SYSTEM_ERROR,           "Could not open the Weight-file",
+errdef, MTC_ERROR_WEIGHT_LOCK,                  (1000 + 1300 + 1), MTC_EXIT_SYSTEM_ERROR,           "Could not lock the Weight-file",
+errdef, MTC_ERROR_WEIGHT_IO_ERROR,              (1000 + 1300 + 2), MTC_EXIT_SYSTEM_ERROR,           "Error in Weight-File access",
+errdef, MTC_ERROR_WEIGHT_TABLE_FULL,            (1000 + 1300 + 3), MTC_EXIT_INVALID_PARAMETER,      "Too many classes are defined",
+
+
+
+
+//  Undefined
+
+errdef, MTC_ERROR_UNDEFINED,                    (1000 + 9000 + 0), MTC_EXIT_INTERNAL_BUG,           "",
+
+#ifdef MTC_NEED_ERROR_TABLE
+};
+#endif
+
+#endif	// MTCERRNO_H

@@ -1,0 +1,51 @@
+# -*- rpm-spec -*-
+
+Summary: xha - XenServer proprietary HA daemon
+Name:    xha
+Version: @PRODUCT_VERSION@ 
+Release: @CSET_NUMBER@
+Group:   System/Hypervisor
+License: Proprietary
+URL:  http://www.citrix.com
+Source0: xha-@PRODUCT_VERSION@.tar.bz2
+BuildRoot: %{_tmppath}/%{name}-%{version}-root
+
+%description
+This package contains the HA heartbeating daemon used for XenServer's HA feature 
+
+%prep
+%setup -q
+
+%build
+make
+
+%install
+DESTDIR=$RPM_BUILD_ROOT make install
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+/etc/logrotate.d/xha
+/opt/xensource/xha/calldaemon
+/opt/xensource/xha/cleanupwatchdog
+/opt/xensource/xha/dumpstatefile
+/opt/xensource/xha/ha_clear_excluded
+/opt/xensource/xha/ha_disarm_fencing
+/opt/xensource/xha/ha_errnorc
+/opt/xensource/xha/ha_null
+/opt/xensource/xha/ha_propose_master
+/opt/xensource/xha/ha_query_liveset
+/opt/xensource/xha/ha_rc
+/opt/xensource/xha/ha_set_excluded
+/opt/xensource/xha/ha_set_host_weight
+/opt/xensource/xha/ha_set_pool_state
+/opt/xensource/xha/ha_start_daemon
+/opt/xensource/xha/ha_stop_daemon
+/opt/xensource/xha/weightctl
+/opt/xensource/xha/writestatefile
+/opt/xensource/xha/xhad
+
+%changelog
+

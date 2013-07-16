@@ -1,0 +1,112 @@
+XenServer HA Release Notes (Revision 1.1)
+
+#       Copyright (c) Stratus Technologies Bermuda Ltd., 2008.
+#       All Rights Reserved. Unpublished rights reserved
+#       under the copyright laws of the United States.
+# 
+#       This program is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU Lesser General Public License as published
+#       by the Free Software Foundation; version 2.1 only. with the special
+#       exception on linking described in file LICENSE.
+#
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU Lesser General Public License for more details.
+
+Revision 1.1 (Phase 2 Development)
+Date: April 18, 2008
+
+1. About this release
+
+    This release represents the completion of Phase 2 development of XenServer HA
+    (xha) component, as mutually agreed in the SOW.
+
+2. Related Documents
+
+    XenServer HA Interface Specification Rev. 1.4 (April 18, 2008)
+
+3. Deliverables
+
+    All source files of this component have been 'pushed' to the Mercurial
+    repository at ssh://mtha@tfr.colo.xensource.com/xha.hg
+    
+    Directory list:
+
+(new) sysloglist
+        List of syslog messages.
+    readme
+        This release notes.
+    Makefile
+        Top-level makefile of xha.
+    default-debug.mk
+        Various make defaults for debug build.
+    default-release.mk
+        Various make defaults for release build.
+    commands/
+        Source files of utility programs for the HA scripts.
+    daemon/
+        Source fies of the HA daemon.
+    include/
+        Header files shared by commands, daemon and lib.
+    lib/
+        Library source files shared by daemon and commands.
+    mk/
+        XenSource Makefile.
+    scripts/
+        HA scripts.
+    stubs/
+        HA stubs. Stubs have not been modified since they are first released
+        on March 14, 2008.
+    hypervisor_patch/
+        Hypervisor patch to support 2 watchdog instances.
+        Christian has agreed to incorporate this patch to Orlando release.
+    
+4. Installation
+
+    On your build system,
+    
+    (1) Populate your workspace
+    
+        The phase2 revision is tagged "phase2".
+
+        $ hg pull
+        $ hg update phase2
+    
+    The rest of the installation procedure has not changed since
+    phase 1 release.
+
+    (2) Build the hypervisor with the watchdog hypervisor patch.
+    (3) Build xha modules
+
+    On your target XenServer system,
+
+    (4) Install the modified hypervisor to the target system.
+    (5) Disable xen-watchdog, since it takes one of two watchdog instances.
+    (6) Copy all xha directory structure under your-destination-directory
+        to the root directory of the target dom0.
+    (7) Reboot the system.
+    (8) Make Ethernet interface available for heartbeats, provision a VDI
+        for the State-File and create the config-file on each host of the pool.
+    
+5. Features yet to implement
+
+    None
+
+6. Tested Configurations
+
+    All use cases described in the xha interface specification are tested
+    against the following hardware configurations.
+
+    (1) 1-host pool with one iSCSI disk.
+    (2) 2-host pool with 1Gbps (bonded) Ethernet and one iSCSI disk.
+    (3) 4-host pool with 1Gbps (non-bonded) Ethernet and one iSCSI disk.
+      
+    * The following features are tested, but only with stubs created by
+      Marathon.
+        * Xapi health check
+        * XAPI restart
+        * HA License check
+
+    * All tests have been done against debug builds
+      (i.e. compiled without -DNDEBUG).
