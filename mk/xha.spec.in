@@ -28,6 +28,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 /etc/logrotate.d/xha
+/etc/portreserve/xhad
 /opt/xensource/xha/calldaemon
 /opt/xensource/xha/cleanupwatchdog
 /opt/xensource/xha/dumpstatefile

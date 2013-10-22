@@ -28,6 +28,8 @@ install: $(TARGET)
 	@cp ha_* $(DESTDIR)$(INSDIR)
 	@mkdir -p $(DESTDIR)$(LOGCONFDIR)
 	@cp logrotate.xha.conf $(DESTDIR)$(LOGCONFDIR)/xha
+	@mkdir -p $(DESTDIR)/etc/portreserve
+	@cp etc_portreserve_xhad $(DESTDIR)/etc/portreserve/xhad
 
 clean:
 	rm -f $(TARGET) $(TARGET_GENERR) $(OBJS_GENERR)
