@@ -39,6 +39,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <sys/resource.h>
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
