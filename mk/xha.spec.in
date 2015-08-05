@@ -17,7 +17,7 @@ This package contains the HA heartbeating daemon used for XenServer's HA feature
 %setup -q
 
 %build
-make
+%{?cov_wrap} make
 
 %install
 DESTDIR=$RPM_BUILD_ROOT make install
