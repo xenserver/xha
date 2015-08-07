@@ -19,7 +19,7 @@
 #   ha_propose_master
 #
 
-. /opt/xensource/xha/ha_stubrc
+. /usr/libexec/xapi/cluster-stack/xhad/ha_stubrc
 
 get_xhad_status
     sf=$_sf

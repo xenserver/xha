@@ -17,7 +17,7 @@
 #   XenSource HA stub scripts
 
 default_cf=/etc/xensource/xhad.conf
-scriptdir=/opt/xensource/xha
+scriptdir=/usr/libexec/xapi/cluster-stack/xhad
 tmpfile=/tmp/xhastub.$$
 
 #

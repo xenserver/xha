@@ -19,7 +19,7 @@
 #   ha_start_daemon [-C <config-file-name>]
 #
 
-. /opt/xensource/xha/ha_stubrc
+. /usr/libexec/xapi/cluster-stack/xhad/ha_stubrc
 
 # get config-file name
 cf=`getcf $*` || exit $?

@@ -1,5 +1,5 @@
 DESTDIR=
-SCRIPTDIR=/opt/xensource/xha
+SCRIPTDIR=/usr/libexec/xapi/cluster-stack/xhad
 FRC=
 
 TARGET= $(SCRIPTDIR)/cfread \

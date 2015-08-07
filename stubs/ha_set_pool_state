@@ -19,7 +19,7 @@
 #   ha_set_pool_state    init | active | invalid [-C <config-file-name>]
 #
 
-. /opt/xensource/xha/ha_stubrc
+. /usr/libexec/xapi/cluster-stack/xhad/ha_stubrc
 
 #   Get new state
 newstate=`param $*` || exit $?
