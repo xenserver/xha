@@ -10,6 +10,11 @@ URL:  http://www.citrix.com
 Source0: xha-@PRODUCT_VERSION@.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
+BuildRequires: libxml2-devel
+BuildRequires: xen-devel
+
+Requires: portreserve
+
 %description
 This package contains the HA heartbeating daemon used for XenServer's HA feature 
 
