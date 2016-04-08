@@ -27,14 +27,6 @@ This package contains the HA heartbeating daemon used for XenServer's HA feature
 %install
 DESTDIR=$RPM_BUILD_ROOT make install
 
-%preun
-if [ $1 -eq 0 ]; then
-  systemctl disable portreserve.service
-fi
-
-%post
-systemctl enable portreserve.service
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
