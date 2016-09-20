@@ -10,6 +10,11 @@ URL:  http://www.citrix.com
 Source0: xha-@PRODUCT_VERSION@.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
+BuildRequires: libxml2-devel
+BuildRequires: xen-devel
+
+Requires: portreserve
+
 %description
 This package contains the HA heartbeating daemon used for XenServer's HA feature 
 
@@ -28,24 +33,25 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 /etc/logrotate.d/xha
-/opt/xensource/xha/calldaemon
-/opt/xensource/xha/cleanupwatchdog
-/opt/xensource/xha/dumpstatefile
-/opt/xensource/xha/ha_clear_excluded
-/opt/xensource/xha/ha_disarm_fencing
-/opt/xensource/xha/ha_errnorc
-/opt/xensource/xha/ha_null
-/opt/xensource/xha/ha_propose_master
-/opt/xensource/xha/ha_query_liveset
-/opt/xensource/xha/ha_rc
-/opt/xensource/xha/ha_set_excluded
-/opt/xensource/xha/ha_set_host_weight
-/opt/xensource/xha/ha_set_pool_state
-/opt/xensource/xha/ha_start_daemon
-/opt/xensource/xha/ha_stop_daemon
-/opt/xensource/xha/weightctl
-/opt/xensource/xha/writestatefile
-/opt/xensource/xha/xhad
+/etc/portreserve/xhad
+/usr/libexec/xapi/cluster-stack/xhad/calldaemon
+/usr/libexec/xapi/cluster-stack/xhad/cleanupwatchdog
+/usr/libexec/xapi/cluster-stack/xhad/dumpstatefile
+/usr/libexec/xapi/cluster-stack/xhad/ha_clear_excluded
+/usr/libexec/xapi/cluster-stack/xhad/ha_disarm_fencing
+/usr/libexec/xapi/cluster-stack/xhad/ha_errnorc
+/usr/libexec/xapi/cluster-stack/xhad/ha_null
+/usr/libexec/xapi/cluster-stack/xhad/ha_propose_master
+/usr/libexec/xapi/cluster-stack/xhad/ha_query_liveset
+/usr/libexec/xapi/cluster-stack/xhad/ha_rc
+/usr/libexec/xapi/cluster-stack/xhad/ha_set_excluded
+/usr/libexec/xapi/cluster-stack/xhad/ha_set_host_weight
+/usr/libexec/xapi/cluster-stack/xhad/ha_set_pool_state
+/usr/libexec/xapi/cluster-stack/xhad/ha_start_daemon
+/usr/libexec/xapi/cluster-stack/xhad/ha_stop_daemon
+/usr/libexec/xapi/cluster-stack/xhad/weightctl
+/usr/libexec/xapi/cluster-stack/xhad/writestatefile
+/usr/libexec/xapi/cluster-stack/xhad/xhad
 
 %changelog
 

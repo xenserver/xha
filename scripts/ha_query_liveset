@@ -14,7 +14,7 @@
 #       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #       GNU Lesser General Public License for more details.
 
-. /opt/xensource/xha/ha_rc
+. /usr/libexec/xapi/cluster-stack/xhad/ha_rc
 
 #
 #   ha_query_liveset

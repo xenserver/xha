@@ -13,7 +13,7 @@ INCDIR=$(SOURCEDIR)/include
 INCLUDES=-I$(INCDIR)
 LIBS=-lxml2 -lrt
 HALIBS=$(OBJDIR)/libxha.a
-INSDIR=/opt/xensource/xha
+INSDIR=/usr/libexec/xapi/cluster-stack/xhad
 LOGCONFDIR=/etc/logrotate.d
 
 .PHONY: build clean debug release

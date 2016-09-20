@@ -18,7 +18,7 @@
 #   XenSource HA scripts
 
 configfile=/etc/xensource/xhad.conf
-scriptdir=/opt/xensource/xha
+scriptdir=/usr/libexec/xapi/cluster-stack/xhad
 daemon_wd=$scriptdir
 
 #

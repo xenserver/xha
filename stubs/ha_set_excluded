@@ -19,6 +19,6 @@
 #   ha_set_excluded
 #
 
-. /opt/xensource/xha/ha_stubrc
+. /usr/libexec/xapi/cluster-stack/xhad/ha_stubrc
 
 exit 0
