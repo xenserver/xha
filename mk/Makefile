@@ -3,7 +3,7 @@ IMPORT_BRANDING := yes
 include $(B_BASE)/rpmbuild.mk
 include $(B_BASE)/common.mk
 
-REPO := $(call hg_loc,xha)
+REPO := $(call git_loc,xha)
 REPO_NAME := xha
 RPM_BINDIR := $(RPM_RPMSDIR)/$(DOMAIN0_ARCH_OPTIMIZED)
 
@@ -14,7 +14,7 @@ PKG_STAMP := $(MY_XENSERVER_PACKAGES)/.dirstamp
 $(MY_OBJ_DIR)/version.inc:
 	rm -f $(MY_OBJ_DIR)/version.inc
 	$(version-makefile) > $@
-	$(call hg_cset_number,xha) >> $@
+	$(call git_cset_number,xha) >> $@
 	echo XHA_VERSION := \$$\(PRODUCT_VERSION\) >> $@
 	echo XHA_RELEASE := \$$\(CSET_NUMBER\) >> $@
 
@@ -29,7 +29,7 @@ build: srpm $(PKG_STAMP)
 .PHONY: srpm
 srpm: $(RPM_SPECSDIR)/$(REPO_NAME).spec
 	mkdir -p $(RPM_SRPMSDIR) $(RPM_SPECSDIR) $(RPM_SOURCESDIR) $(RPM_RPMSDIR)
-	hg archive -p xha-$(PRODUCT_VERSION) -t tbz2 $(RPM_SOURCESDIR)/xha-$(PRODUCT_VERSION).tar.bz2
+	cd $(REPO) && git archive --prefix xha-$(PRODUCT_VERSION)/ --format tar.gz --output $(RPM_SOURCESDIR)/xha-$(PRODUCT_VERSION).tar.gz HEAD
 	$(RPMBUILD) -bs $(RPM_SPECSDIR)/xha.spec
 
 $(RPM_SPECSDIR)/$(REPO_NAME).spec: $(REPO_NAME).spec.in $(RPM_SPECSDIR)/.dirstamp $(MY_OBJ_DIR)/version.inc
