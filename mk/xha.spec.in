@@ -1,11 +1,11 @@
 # -*- rpm-spec -*-
 
-Summary: xha - XenServer proprietary HA daemon
+Summary: xha - XenServer HA daemon
 Name:    xha
 Version: @PRODUCT_VERSION@ 
 Release: @CSET_NUMBER@
 Group:   System/Hypervisor
-License: Proprietary
+License: GPLv2
 URL:  http://www.citrix.com
 Source0: xha-@PRODUCT_VERSION@.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
