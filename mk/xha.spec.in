@@ -1,13 +1,13 @@
 # -*- rpm-spec -*-
 
-Summary: xha - XenServer proprietary HA daemon
+Summary: xha - XenServer HA daemon
 Name:    xha
 Version: @PRODUCT_VERSION@ 
 Release: @CSET_NUMBER@
 Group:   System/Hypervisor
-License: Proprietary
+License: GPLv2
 URL:  http://www.citrix.com
-Source0: xha-@PRODUCT_VERSION@.tar.bz2
+Source0: xha-@PRODUCT_VERSION@.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 BuildRequires: libxml2-devel
@@ -32,26 +32,26 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-/etc/logrotate.d/xha
-/etc/portreserve/xhad
-/usr/libexec/xapi/cluster-stack/xhad/calldaemon
-/usr/libexec/xapi/cluster-stack/xhad/cleanupwatchdog
-/usr/libexec/xapi/cluster-stack/xhad/dumpstatefile
-/usr/libexec/xapi/cluster-stack/xhad/ha_clear_excluded
-/usr/libexec/xapi/cluster-stack/xhad/ha_disarm_fencing
-/usr/libexec/xapi/cluster-stack/xhad/ha_errnorc
-/usr/libexec/xapi/cluster-stack/xhad/ha_null
-/usr/libexec/xapi/cluster-stack/xhad/ha_propose_master
-/usr/libexec/xapi/cluster-stack/xhad/ha_query_liveset
-/usr/libexec/xapi/cluster-stack/xhad/ha_rc
-/usr/libexec/xapi/cluster-stack/xhad/ha_set_excluded
-/usr/libexec/xapi/cluster-stack/xhad/ha_set_host_weight
-/usr/libexec/xapi/cluster-stack/xhad/ha_set_pool_state
-/usr/libexec/xapi/cluster-stack/xhad/ha_start_daemon
-/usr/libexec/xapi/cluster-stack/xhad/ha_stop_daemon
-/usr/libexec/xapi/cluster-stack/xhad/weightctl
-/usr/libexec/xapi/cluster-stack/xhad/writestatefile
-/usr/libexec/xapi/cluster-stack/xhad/xhad
+%{_sysconfdir}/logrotate.d/xha
+%{_sysconfdir}/portreserve/xhad
+%{_libexecdir}/xapi/cluster-stack/xhad/calldaemon
+%{_libexecdir}/xapi/cluster-stack/xhad/cleanupwatchdog
+%{_libexecdir}/xapi/cluster-stack/xhad/dumpstatefile
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_clear_excluded
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_disarm_fencing
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_errnorc
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_null
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_propose_master
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_query_liveset
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_rc
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_set_excluded
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_set_host_weight
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_set_pool_state
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_start_daemon
+%{_libexecdir}/xapi/cluster-stack/xhad/ha_stop_daemon
+%{_libexecdir}/xapi/cluster-stack/xhad/weightctl
+%{_libexecdir}/xapi/cluster-stack/xhad/writestatefile
+%{_libexecdir}/xapi/cluster-stack/xhad/xhad
 
 %changelog
 
