@@ -2,12 +2,12 @@
 
 Summary: xha - XenServer HA daemon
 Name:    xha
-Version: @PRODUCT_VERSION@ 
-Release: @CSET_NUMBER@
+Version: 10.0.1
+Release: 1
 Group:   System/Hypervisor
 License: GPLv2
 URL:  http://www.citrix.com
-Source0: xha-@PRODUCT_VERSION@.tar.gz
+Source0: xha-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 BuildRequires: libxml2-devel
