@@ -29,7 +29,7 @@ build: srpm $(PKG_STAMP)
 .PHONY: srpm
 srpm: $(RPM_SPECSDIR)/$(REPO_NAME).spec
 	mkdir -p $(RPM_SRPMSDIR) $(RPM_SPECSDIR) $(RPM_SOURCESDIR) $(RPM_RPMSDIR)
-	cd $(REPO) && git archive --prefix xha-10.0.1/ --format tar.gz --output $(RPM_SOURCESDIR)/xha-10.0.1.tar.gz HEAD
+	cd $(REPO) && git archive --prefix xha-10.0.2/ --format tar.gz --output $(RPM_SOURCESDIR)/xha-10.0.2.tar.gz HEAD
 	$(RPMBUILD) -bs $(RPM_SPECSDIR)/xha.spec
 
 $(RPM_SPECSDIR)/$(REPO_NAME).spec: $(REPO_NAME).spec.in $(RPM_SPECSDIR)/.dirstamp $(MY_OBJ_DIR)/version.inc

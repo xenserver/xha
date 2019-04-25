@@ -2,7 +2,7 @@
 
 Summary: xha - XenServer HA daemon
 Name:    xha
-Version: 10.0.1
+Version: 10.0.2
 Release: 1
 Group:   System/Hypervisor
 License: GPLv2
