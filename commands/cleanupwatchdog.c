@@ -332,7 +332,8 @@ do_watchdog_disable(uint32_t *id)
 //
 //  FORMAL PARAMETERS:
 //
-//          
+//      --force: disable the first 2 watchdog slots for xhad
+//
 //  RETURN VALUE:
 //
 //      MTC_EXIT_SUCCESS - success the call
@@ -365,6 +366,23 @@ main(
 
     if ((fp = fopen(WATCHDOG_INSTANCE_ID_FILE, "r")) == NULL)
     {
+        if (argc == 2 && !strcmp(argv[1], "--force"))
+        {
+            // xhad uses 2 slots; 0 is for requesting a new slot
+            for (idindex = 1; idindex < 3; idindex++)
+            {
+                status = do_watchdog_disable(&idindex);
+
+                if (status == MTC_ERROR_WD_INSUFFICIENT_RESOURCE)
+                {
+                    return MTC_EXIT_TRANSIENT_SYSTEM_ERROR;
+                }
+                if (status == MTC_ERROR_UNDEFINED)
+                {
+                    return MTC_EXIT_INTERNAL_BUG;
+                }
+            }
+        }
         return MTC_EXIT_SUCCESS;
     }
     while (fgets(buf, sizeof(buf), fp) != NULL)
