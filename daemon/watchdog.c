@@ -320,21 +320,19 @@ do_hypercall(privcmd_hypercall_t *hypercall, void *arg, size_t argsize, int *ioc
     else
     {
         ret = ioctl(hypercall_fd, IOCTL_PRIVCMD_HYPERCALL, hypercall);
-    }
-    if (ret < 0)  
-    {
-
-        if (currentstatus == MTC_SUCCESS)
+        if (ret < 0 && currentstatus == MTC_SUCCESS)
         {
-            log_internal(MTC_LOG_ERR, "WD: hypercall failed (sys %d).\n", ret);
+            log_internal(MTC_LOG_ERR, "WD: hypercall failed (sys %d).\n", errno);
         }
-
-        unlock_pages(hypercall, sizeof(privcmd_hypercall_t));
-        unlock_pages(arg, argsize);
-        return MTC_ERROR_WD_INSTANCE_UNAVAILABLE ;
     }
+
     unlock_pages(hypercall, sizeof(privcmd_hypercall_t));
     unlock_pages(arg, argsize);
+
+    if (ret < 0)
+    {
+        return MTC_ERROR_WD_INSTANCE_UNAVAILABLE ;
+    }
 
     *ioctl_ret = ret;
     return MTC_SUCCESS;
