@@ -201,23 +201,20 @@ unlock_pages(
 //
 //  NAME:
 //
-//      do_watchdog_hypercall
+//      do_watchdog_disable
 //
 //  DESCRIPTION:
 //
-//      call hypervisor to create/update/close watchdog
+//      call hypervisor to disable watchdog
 //
 //  FORMAL PARAMETERS:
 //
-//      id - watchdog id (0: create)
-//      timeout - watchdog timeout (0: close)
-//      currentstatus - current status for edge trriger logging.
-//                      MTC_SUCCESS: enable log
-//                      other: disable log
+//      id - watchdog id (cannot be 0)
 //
 //  RETURN VALUE:
 //
 //      MTC_SUCCESS - success
+//      MTC_ERROR_INVALID_PARAMETER - id cannot be 0
 //      MTC_ERROR_WD_INSUFFICIENT_RESOURCE - No Memory available
 //      MTC_ERROR_WD_INVALID_HANDLE - id is invalid for the operation
 //      other - fail
@@ -229,7 +226,7 @@ unlock_pages(
 
 
 MTC_STATIC  MTC_STATUS
-do_watchdog_hypercall(uint32_t *id, uint32_t timeout)
+do_watchdog_disable(uint32_t *id)
 {
     int ret;
     int fd;
@@ -241,7 +238,12 @@ do_watchdog_hypercall(uint32_t *id, uint32_t timeout)
     hypercall.arg[0] = SCHEDOP_watchdog;
     hypercall.arg[1] = (__u64) (unsigned int) &arg;  // pointer to u64
     arg.id = *id;
-    arg.timeout = timeout;
+    arg.timeout = 0;
+
+    if (*id == 0)
+    {
+        return MTC_ERROR_INVALID_PARAMETER;
+    }
 
     fd = open(PRIVCMD_PATH, O_RDWR);
 
@@ -262,9 +264,9 @@ do_watchdog_hypercall(uint32_t *id, uint32_t timeout)
     }
     ret = ioctl(fd, IOCTL_PRIVCMD_HYPERCALL, &hypercall);
 
-    if (ret < 0)
+    if (ret != 0)
     {
-        ret = errno;
+        ret = ret < 0 ? errno : ret;
 
         close(fd);
         unlock_pages(&hypercall, sizeof(hypercall));
@@ -276,28 +278,20 @@ do_watchdog_hypercall(uint32_t *id, uint32_t timeout)
             // or because there is no slot with this id
             return MTC_ERROR_WD_INVALID_HANDLE;
         }
-        return MTC_ERROR_WD_INSTANCE_UNAVAILABLE ;
+        if (ret > 0)
+        {
+            // A new watchdog was set
+            // This should not be possible since
+            // *id is made sure to not be 0
+            return MTC_ERROR_UNDEFINED;
+        }
+        return MTC_ERROR_WD_INSTANCE_UNAVAILABLE;
     }
 
     close(fd);
     unlock_pages(&hypercall, sizeof(hypercall));
     unlock_pages(&arg, sizeof(arg));
 
-    //
-    // if id == 0 ret is new id should be > 0
-    //
-
-    if (*id == 0) 
-    {
-        if (ret > 0) 
-        {
-            *id = ret;
-        }
-        else 
-        {
-            return MTC_ERROR_WD_INSTANCE_UNAVAILABLE;
-        }
-    }
     return MTC_SUCCESS;
 }
 
@@ -392,7 +386,7 @@ main(
         {
             continue;
         }
-        status = do_watchdog_hypercall(&(id[idindex]), 0);
+        status = do_watchdog_disable(&(id[idindex]));
 
         if (status == MTC_ERROR_WD_INSUFFICIENT_RESOURCE)
         {
