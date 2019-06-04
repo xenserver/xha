@@ -218,6 +218,8 @@ unlock_pages(
 //  RETURN VALUE:
 //
 //      MTC_SUCCESS - success
+//      MTC_ERROR_WD_INSUFFICIENT_RESOURCE - No Memory available
+//      MTC_ERROR_WD_INVALID_HANDLE - id is invalid for the operation
 //      other - fail
 //
 //  ENVIRONMENT:
@@ -259,13 +261,24 @@ do_watchdog_hypercall(uint32_t *id, uint32_t timeout)
         return MTC_ERROR_WD_INSUFFICIENT_RESOURCE;
     }
     ret = ioctl(fd, IOCTL_PRIVCMD_HYPERCALL, &hypercall);
-    if (ret < 0) 
+
+    if (ret < 0)
     {
+        ret = errno;
+
         close(fd);
         unlock_pages(&hypercall, sizeof(hypercall));
         unlock_pages(&arg, sizeof(arg));
+
+        if (ret == -EINVAL)
+        {
+            // This may happen because the slot is not in use
+            // or because there is no slot with this id
+            return MTC_ERROR_WD_INVALID_HANDLE;
+        }
         return MTC_ERROR_WD_INSTANCE_UNAVAILABLE ;
     }
+
     close(fd);
     unlock_pages(&hypercall, sizeof(hypercall));
     unlock_pages(&arg, sizeof(arg));
