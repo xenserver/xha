@@ -371,7 +371,7 @@ main(
 
     if ((fp = fopen(WATCHDOG_INSTANCE_ID_FILE, "r")) == NULL)
     {
-        return MTC_SUCCESS;
+        return MTC_EXIT_SUCCESS;
     }
     while (fgets(buf, sizeof(buf), fp) != NULL)
     {
@@ -393,6 +393,15 @@ main(
             continue;
         }
         status = do_watchdog_hypercall(&(id[idindex]), 0);
+
+        if (status == MTC_ERROR_WD_INSUFFICIENT_RESOURCE)
+        {
+            return MTC_EXIT_TRANSIENT_SYSTEM_ERROR;
+        }
+        if (status != MTC_SUCCESS)
+        {
+            return MTC_EXIT_INTERNAL_BUG;
+        }
     }
     return MTC_EXIT_SUCCESS;
 }
