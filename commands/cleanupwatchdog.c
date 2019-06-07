@@ -230,6 +230,7 @@ do_watchdog_disable(uint32_t *id)
 {
     int ret;
     int fd;
+    int rc;
 
     privcmd_hypercall_t hypercall = {0};
     sched_watchdog_t arg;
@@ -262,37 +263,36 @@ do_watchdog_disable(uint32_t *id)
         unlock_pages(&arg, sizeof(arg));
         return MTC_ERROR_WD_INSUFFICIENT_RESOURCE;
     }
+
     ret = ioctl(fd, IOCTL_PRIVCMD_HYPERCALL, &hypercall);
 
-    if (ret != 0)
+    if (ret == 0)
     {
-        ret = ret < 0 ? errno : ret;
-
-        close(fd);
-        unlock_pages(&hypercall, sizeof(hypercall));
-        unlock_pages(&arg, sizeof(arg));
-
-        if (ret == -EINVAL)
-        {
-            // This may happen because the slot is not in use
-            // or because there is no slot with this id
-            return MTC_ERROR_WD_INVALID_HANDLE;
-        }
-        if (ret > 0)
-        {
-            // A new watchdog was set
-            // This should not be possible since
-            // *id is made sure to not be 0
-            return MTC_ERROR_UNDEFINED;
-        }
-        return MTC_ERROR_WD_INSTANCE_UNAVAILABLE;
+        rc = MTC_SUCCESS;
+    }
+    else if (ret < 0 && errno == -EINVAL)
+    {
+        // This may happen because the slot is not in use
+        // or because there is no slot with this id
+        rc = MTC_ERROR_WD_INVALID_HANDLE;
+    }
+    else if (ret < 0)
+    {
+        rc = MTC_ERROR_WD_INSTANCE_UNAVAILABLE;
+    }
+    else // (ret > 0)
+    {
+        // A new watchdog was set
+        // This should not be possible since
+        // *id is made sure to not be 0
+        rc = MTC_ERROR_UNDEFINED;
     }
 
     close(fd);
     unlock_pages(&hypercall, sizeof(hypercall));
     unlock_pages(&arg, sizeof(arg));
 
-    return MTC_SUCCESS;
+    return rc;
 }
 
 
