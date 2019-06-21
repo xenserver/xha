@@ -46,6 +46,9 @@ if [ $retval -ne $MTC_EXIT_DAEMON_IS_NOT_PRESENT ]; then
     exit $MTC_EXIT_DAEMON_IS_PRESENT
 fi
 
+#   flush watchdog slots
+cleanupwatchdog --force
+
 #   start xha daemon
 
 portrelease xhad 2&>1 > /dev/null || true

@@ -201,23 +201,22 @@ unlock_pages(
 //
 //  NAME:
 //
-//      do_watchdog_hypercall
+//      do_watchdog_disable
 //
 //  DESCRIPTION:
 //
-//      call hypervisor to create/update/close watchdog
+//      call hypervisor to disable watchdog
 //
 //  FORMAL PARAMETERS:
 //
-//      id - watchdog id (0: create)
-//      timeout - watchdog timeout (0: close)
-//      currentstatus - current status for edge trriger logging.
-//                      MTC_SUCCESS: enable log
-//                      other: disable log
+//      id - watchdog id (cannot be 0)
 //
 //  RETURN VALUE:
 //
 //      MTC_SUCCESS - success
+//      MTC_ERROR_INVALID_PARAMETER - id cannot be 0
+//      MTC_ERROR_WD_INSUFFICIENT_RESOURCE - No Memory available
+//      MTC_ERROR_WD_INVALID_HANDLE - id is invalid for the operation
 //      other - fail
 //
 //  ENVIRONMENT:
@@ -227,10 +226,11 @@ unlock_pages(
 
 
 MTC_STATIC  MTC_STATUS
-do_watchdog_hypercall(uint32_t *id, uint32_t timeout)
+do_watchdog_disable(uint32_t *id)
 {
     int ret;
     int fd;
+    int rc;
 
     privcmd_hypercall_t hypercall = {0};
     sched_watchdog_t arg;
@@ -239,7 +239,12 @@ do_watchdog_hypercall(uint32_t *id, uint32_t timeout)
     hypercall.arg[0] = SCHEDOP_watchdog;
     hypercall.arg[1] = (__u64) (unsigned int) &arg;  // pointer to u64
     arg.id = *id;
-    arg.timeout = timeout;
+    arg.timeout = 0;
+
+    if (*id == 0)
+    {
+        return MTC_ERROR_INVALID_PARAMETER;
+    }
 
     fd = open(PRIVCMD_PATH, O_RDWR);
 
@@ -258,34 +263,36 @@ do_watchdog_hypercall(uint32_t *id, uint32_t timeout)
         unlock_pages(&arg, sizeof(arg));
         return MTC_ERROR_WD_INSUFFICIENT_RESOURCE;
     }
+
     ret = ioctl(fd, IOCTL_PRIVCMD_HYPERCALL, &hypercall);
-    if (ret < 0) 
+
+    if (ret == 0)
     {
-        close(fd);
-        unlock_pages(&hypercall, sizeof(hypercall));
-        unlock_pages(&arg, sizeof(arg));
-        return MTC_ERROR_WD_INSTANCE_UNAVAILABLE ;
+        rc = MTC_SUCCESS;
     }
+    else if (ret < 0 && errno == -EINVAL)
+    {
+        // This may happen because the slot is not in use
+        // or because there is no slot with this id
+        rc = MTC_ERROR_WD_INVALID_HANDLE;
+    }
+    else if (ret < 0)
+    {
+        rc = MTC_ERROR_WD_INSTANCE_UNAVAILABLE;
+    }
+    else // (ret > 0)
+    {
+        // A new watchdog was set
+        // This should not be possible since
+        // *id is made sure to not be 0
+        rc = MTC_ERROR_UNDEFINED;
+    }
+
     close(fd);
     unlock_pages(&hypercall, sizeof(hypercall));
     unlock_pages(&arg, sizeof(arg));
 
-    //
-    // if id == 0 ret is new id should be > 0
-    //
-
-    if (*id == 0) 
-    {
-        if (ret > 0) 
-        {
-            *id = ret;
-        }
-        else 
-        {
-            return MTC_ERROR_WD_INSTANCE_UNAVAILABLE;
-        }
-    }
-    return MTC_SUCCESS;
+    return rc;
 }
 
 
@@ -325,7 +332,8 @@ do_watchdog_hypercall(uint32_t *id, uint32_t timeout)
 //
 //  FORMAL PARAMETERS:
 //
-//          
+//      --force: disable the first 2 watchdog slots for xhad
+//
 //  RETURN VALUE:
 //
 //      MTC_EXIT_SUCCESS - success the call
@@ -358,7 +366,24 @@ main(
 
     if ((fp = fopen(WATCHDOG_INSTANCE_ID_FILE, "r")) == NULL)
     {
-        return MTC_SUCCESS;
+        if (argc == 2 && !strcmp(argv[1], "--force"))
+        {
+            // xhad uses 2 slots; 0 is for requesting a new slot
+            for (idindex = 1; idindex < 3; idindex++)
+            {
+                status = do_watchdog_disable(&idindex);
+
+                if (status == MTC_ERROR_WD_INSUFFICIENT_RESOURCE)
+                {
+                    return MTC_EXIT_TRANSIENT_SYSTEM_ERROR;
+                }
+                if (status == MTC_ERROR_UNDEFINED)
+                {
+                    return MTC_EXIT_INTERNAL_BUG;
+                }
+            }
+        }
+        return MTC_EXIT_SUCCESS;
     }
     while (fgets(buf, sizeof(buf), fp) != NULL)
     {
@@ -379,7 +404,16 @@ main(
         {
             continue;
         }
-        status = do_watchdog_hypercall(&(id[idindex]), 0);
+        status = do_watchdog_disable(&(id[idindex]));
+
+        if (status == MTC_ERROR_WD_INSUFFICIENT_RESOURCE)
+        {
+            return MTC_EXIT_TRANSIENT_SYSTEM_ERROR;
+        }
+        if (status != MTC_SUCCESS)
+        {
+            return MTC_EXIT_INTERNAL_BUG;
+        }
     }
     return MTC_EXIT_SUCCESS;
 }
