@@ -1,0 +1,7 @@
+debug/
+release/
+include/buildid.h
+include/mtcerrno.h
+scripts/generr
+scripts/generr.o
+scripts/ha_errnorc

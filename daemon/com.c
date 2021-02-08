@@ -923,8 +923,7 @@ com_close(
     }
     if (object_safe_to_delete(object)) 
     {
-        object = delete_common_object(object->object_id);
-        if (object == NULL) 
+        if (delete_common_object(object->object_id) == NULL)
         {
             log_message(MTC_LOG_WARNING, "COM: object (%s) not found in the table.\n",
                         object->object_id);
