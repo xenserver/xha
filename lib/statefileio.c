@@ -106,11 +106,41 @@ sf_FIST_delay_on_write();
 //
 
 
+enum {
+    DEVICE_TYPE_NORMAL = 0,
+    DEVICE_TYPE_NBD = 1
+};
+
+static int
+get_device_type(
+      const char *path)
+{
+    static const int nbd_major = 43;
+
+    struct stat stats;
+    if (stat(path, &stats) == -1)
+    {
+        log_internal(MTC_LOG_ERR, "SF: failed to execute stat (sys %d).\n", errno);
+        return DEVICE_TYPE_NORMAL;
+    }
+    if (S_ISBLK(stats.st_mode) && major(stats.st_rdev) == nbd_major) {
+        return DEVICE_TYPE_NBD;
+    }
+    return DEVICE_TYPE_NORMAL;
+}
+
 extern int
 sf_open(
     char *path)
 {
-    return open(path, (O_RDWR | O_DIRECT));
+    const int device_type = get_device_type(path);
+    const int flags = O_RDWR | O_DIRECT | (device_type == DEVICE_TYPE_NBD ? O_SYNC : 0);
+
+    int fd;
+    do {
+        fd = open(path, flags);
+    } while (fd < 0 && (errno == EAGAIN || errno == EINTR));
+    return fd;
 }
 
 extern int
