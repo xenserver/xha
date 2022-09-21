@@ -34,8 +34,10 @@
 //
 //   
 
+#include <netdb.h>
 #include <netinet/in.h>
 #include <linux/limits.h>
+
 #include "mtctypes.h"
 #include "xha.h"
 
@@ -79,9 +81,15 @@
 //  Define the host identifier.
 //
 
+typedef union socket_address {
+    struct sockaddr sa;
+    struct sockaddr_in sa_in;
+    struct sockaddr_in6 sa_in6;
+} socket_address;
+
 typedef struct ha_config_host_info {
     MTC_S8  host_id[MTC_UUID_SIZE];  // '-' is removed,non NULL terminated.
-    in_addr_t ip_address;       // 
+    socket_address sock_address;
 } HA_CONFIG_HOST_INFO, *PHA_CONFIG_HOST_INFO;
 
 //

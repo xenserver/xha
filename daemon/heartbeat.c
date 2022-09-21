@@ -194,14 +194,14 @@ static struct {
 
 static struct {
     MTC_S32             socket;
-    struct sockaddr     sa_to[MAX_HOST_NUM];
+    socket_address      sa_to[MAX_HOST_NUM];
     WATCHDOG_HANDLE     watchdog;
     MTC_BOOLEAN         terminate;
     pthread_spinlock_t  lock;
     MTC_U32             sequence[MAX_HOST_NUM];
 } hbvar = {
     .socket = -1,
-    .sa_to = {{0}},
+    .sa_to = {},
     .watchdog = INVALID_WATCHDOG_HANDLE_VALUE,
     .terminate = FALSE,
     .sequence = {0},
@@ -453,14 +453,29 @@ hb_initialize0()
 
     // open & bind socket
     {
-        struct sockaddr_in  sa;
+        size_t sock_len = 0;
+        socket_address *ss = &_host_info[_my_index].sock_address;
+        switch (ss->sa.sa_family)
+        {
+            case AF_INET: {
+                struct sockaddr_in *sa = &ss->sa_in;
+                sa->sin_port = htons(_udp_port);
+                sock_len = sizeof *sa;
+                break;
+            }
+            case AF_INET6: {
+                struct sockaddr_in6 *sa6 = &ss->sa_in6;
+                sa6->sin6_port = htons(_udp_port);
+                sock_len = sizeof *sa6;
+                break;
+            }
+            default:
+                log_internal(MTC_LOG_ERR, "HB: Cannot create socket, invalid socket family (%d).\n", ss->sa.sa_family);
+                ret = MTC_ERROR_HB_SOCKET;
+                goto error;
+        }
 
-        memset(&sa, 0, sizeof(sa));
-        sa.sin_family = AF_INET;
-        sa.sin_port = htons(_udp_port);
-        sa.sin_addr.s_addr = _host_info[_my_index].ip_address;
-
-        hbvar.socket = socket(PF_INET, SOCK_DGRAM, 0);
+        hbvar.socket = socket(ss->sa.sa_family, SOCK_DGRAM, 0);
         if (hbvar.socket < 0)
         {
             log_internal(MTC_LOG_ERR, "HB: cannot create socket. (sys %d)\n", errno);
@@ -476,11 +491,23 @@ hb_initialize0()
             ret = MTC_ERROR_HB_SOCKET;
             goto error;
         }
-        if (bind(hbvar.socket, (struct sockaddr *) &sa, sizeof(sa)))
+        if (bind(hbvar.socket, &ss->sa, sock_len))
         {
-            log_internal(MTC_LOG_ERR,
-                "HB: cannot bind socket address (IP address = %s:%d). (sys %d)\n",
-                inet_ntoa(sa.sin_addr), _udp_port, errno);
+            const int error = errno;
+            char ip_address[INET6_ADDRSTRLEN];
+            if (inet_ntop(ss->sa.sa_family, ss, ip_address, sizeof ip_address))
+            {
+                log_internal(MTC_LOG_ERR,
+                   "HB: cannot bind socket address (IP address = %s:%d). (sys %d)\n",
+                   ip_address, _udp_port, error);
+            }
+            else
+            {
+                log_internal(MTC_LOG_ERR,
+                   "HB: cannot bind socket address (unable to get IP address). (sys %d)\n",
+                   error);
+            }
+
             ret = MTC_ERROR_HB_SOCKET;
             goto error;
         }
@@ -492,11 +519,30 @@ hb_initialize0()
 
         for (index = 0; _is_configured_host(index); index++)
         {
+            socket_address *ss = &_host_info[index].sock_address;
+
             memset(&hbvar.sa_to[index], 0, sizeof(hbvar.sa_to[index]));
-            ((struct sockaddr_in *) &(hbvar.sa_to[index]))->sin_family = AF_INET;
-            ((struct sockaddr_in *) &(hbvar.sa_to[index]))->sin_port = htons(_udp_port);
-            ((struct sockaddr_in *) &(hbvar.sa_to[index]))->sin_addr.s_addr =
-                                                _host_info[index].ip_address;
+            switch (ss->sa.sa_family)
+            {
+                case AF_INET: {
+                    struct sockaddr_in *sa = &hbvar.sa_to[index].sa_in;
+                    sa->sin_family = AF_INET;
+                    sa->sin_port = htons(_udp_port);
+                    sa->sin_addr.s_addr = ss->sa_in.sin_addr.s_addr;
+                    break;
+                }
+                case AF_INET6: {
+                    struct sockaddr_in6 *sa6 = &hbvar.sa_to[index].sa_in6;
+                    sa6->sin6_family = AF_INET6;
+                    sa6->sin6_port = htons(_udp_port);
+                    memcpy(&sa6->sin6_addr.s6_addr, ss->sa_in6.sin6_addr.s6_addr, sizeof sa6->sin6_addr.s6_addr);
+                    break;
+                }
+                default:
+                    assert(FALSE); // Already checked during config parsing.
+                    ret = MTC_ERROR_HB_SOCKET;
+                    goto error;
+            }
         }
     }
 
@@ -992,12 +1038,18 @@ send_hb()
     if (!hb_check_fist("hb.isolate") &&
         !fist_on("hb.send.lostpacket"))
     {
+        const socket_address *ss = &hbvar.sa_to[index];
+        const socklen_t dest_len = ss->sa.sa_family == AF_INET ? sizeof(ss->sa_in) : sizeof(ss->sa_in6);
+
         for (index = 0; _is_configured_host(index); index++)
         {
             if (index != _my_index)
             {
-                sendto(hbvar.socket, &pkt, sizeof(pkt), 0,
-                       &hbvar.sa_to[index], sizeof(hbvar.sa_to[index]));
+                const int ret = sendto(hbvar.socket, &pkt, sizeof(pkt), 0, &hbvar.sa_to[index].sa, dest_len);
+                if (ret == -1)
+                {
+                    log_message(MTC_LOG_ERR, "HB: sendto() failed. (sys %d)\n", errno);
+                }
             }
         }
     }
@@ -1037,12 +1089,12 @@ receive_hb()
 
     // Receiving a packet
     {
-        struct sockaddr_in  from;
-        socklen_t           len = sizeof(from);
-        MTC_S32             recvd;
+        socket_address  from;
+        socklen_t       len = sizeof(from);
+        MTC_S32         recvd;
 
         recvd = recvfrom(hbvar.socket, &pkt, sizeof(pkt), MSG_DONTWAIT,
-                         (struct sockaddr *) &from, &len);
+                         &from.sa, &len);
         if (recvd < 0 && errno == EAGAIN)
         {
             // Linux may returns EAGAIN even if the socket is selected.
@@ -1097,9 +1149,26 @@ receive_hb()
                 invalid_packet_recvd = TRUE;
                 time_invalid_packet_recvd = now;
 
+                char ip_address[INET6_ADDRSTRLEN] = "<invalid_ip>";
+                const int family = from.sa.sa_family;
+                inet_ntop(family, &from, ip_address, sizeof ip_address);
+
+                uint16_t port = 0;
+                switch (family)
+                {
+                case AF_INET:
+                    port = ntohs(from.sa_in.sin_port);
+                    break;
+                case AF_INET6:
+                    port = ntohs(from.sa_in6.sin6_port);
+                    break;
+                default:
+                    break; // Ignore...
+                }
+
                 log_message(MTC_LOG_WARNING,
                     "HB: invalid packet received from (%s:%d).\n",
-                    inet_ntoa(from.sin_addr), ntohs(from.sin_port));
+                    ip_address, port);
                 maskable_dump(DUMPPACKET, (PMTC_S8) &pkt, recvd);
             }
 
