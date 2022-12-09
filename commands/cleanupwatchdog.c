@@ -98,7 +98,7 @@
 ////
 
 
-#define PRIVCMD_PATH "/proc/xen/privcmd"
+#define PRIVCMD_PATH "/dev/xen/privcmd"
 #define MAX_WATCHDOG_INSTANCE 8
 
 
