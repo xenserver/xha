@@ -42,6 +42,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <errno.h>
 #include <libxml2/libxml/xmlmemory.h>
 #include <libxml2/libxml/parser.h>
 
@@ -428,14 +429,54 @@ walk_host_config(
                 log_internal(MTC_LOG_ERR, "%s: failed to get IPaddress\n", __func__);
                 return MTC_ERROR_CF_INVALID_FORMAT;
             }
-            c->common.host[c->common.hostnum].ip_address = inet_addr((char *) txt);
-            if (c->common.host[c->common.hostnum].ip_address == 0) 
+
+            const char *ip_address = (char *) txt;
+
+            struct addrinfo hints;
+            struct addrinfo *result;
+            memset(&hints, 0, sizeof hints);
+            hints.ai_family = AF_UNSPEC;
+            hints.ai_socktype = SOCK_DGRAM;
+            hints.ai_flags = AI_NUMERICHOST;
+            hints.ai_protocol = 0;
+            hints.ai_canonname = NULL;
+            hints.ai_addr = NULL;
+            hints.ai_next = NULL;
+
+            errno = 0;
+            const int ret = getaddrinfo(ip_address, NULL, &hints, &result);
+            if (ret)
             {
-                log_internal(MTC_LOG_ERR, "%s: invalid IPaddress %s\n", __func__, txt);
+                log_internal(MTC_LOG_ERR, "%s: failed to get addr info of `%s` (info: %s). (sys %d)\n",
+                    __func__, ip_address, gai_strerror(ret), errno);
                 xmlFree(txt);
                 return MTC_ERROR_CF_INVALID_FORMAT;
             }
+
             xmlFree(txt);
+
+            socket_address *ss = &c->common.host[c->common.hostnum].sock_address;
+            switch (result->ai_family)
+            {
+                case AF_INET: {
+                    struct sockaddr_in *sa = &ss->sa_in;
+                    memcpy(&sa->sin_addr, &((struct sockaddr_in *) result->ai_addr)->sin_addr, sizeof sa->sin_addr);
+                    sa->sin_family = AF_INET;
+                    break;
+                }
+                case AF_INET6: {
+                    struct sockaddr_in6 *sa6 = &ss->sa_in6;
+                    memcpy(&sa6->sin6_addr, &((struct sockaddr_in6 *) result->ai_addr)->sin6_addr, sizeof sa6->sin6_addr);
+                    sa6->sin6_family = AF_INET6;
+                    break;
+                }
+                default:
+                    log_internal(MTC_LOG_ERR, "%s: Unsupported address type: %d\n", __func__, result->ai_family);
+                    freeaddrinfo(result);
+                    return MTC_ERROR_CF_INVALID_FORMAT;
+            }
+
+            freeaddrinfo(result);
         }
     }
     c->common.hostnum++;
