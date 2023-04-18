@@ -383,7 +383,7 @@ walk_host_config(
     // Walk XML
     //
 
-    if (c->common.hostnum > MAX_HOST_NUM) 
+    if (c->common.hostnum >= MAX_HOST_NUM) 
     {
         log_internal(MTC_LOG_ERR,
                     "%s: hostnum(%d) exceeds MAX_HOST_NUM(%d)\n",
