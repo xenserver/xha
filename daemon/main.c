@@ -165,6 +165,9 @@ MTC_STATIC void
 main_save_scheduler(void);
 
 MTC_STATIC void
+main_set_scheduler(void);
+
+MTC_STATIC void
 main_log_timeouts(void);
 
 MTC_STATIC  void *
@@ -346,7 +349,11 @@ main(
 
     main_save_scheduler();
 
-    //  #### Set stacksize for pthread_create();
+    //  #### Set scheduler policy and priority
+
+    main_set_scheduler();
+
+    //  #### Set stacksize and scheduler inherent for pthread_create();
 
     pthread_ret = pthread_attr_init(&pthread_attr);
     if (pthread_ret == 0)
@@ -354,6 +361,17 @@ main(
         pthread_ret = pthread_attr_setstacksize(&pthread_attr, XHA_THREAD_STACKSIZE);
         if (pthread_ret == 0)
         {
+            pthread_ret = pthread_attr_setinheritsched(&pthread_attr, PTHREAD_INHERIT_SCHED);
+            if (pthread_ret == 0)
+            {
+                log_message(MTC_LOG_DEBUG, "pthread_attr_setinheritsched successfully.\n");
+            }
+            else
+            {
+                log_message(MTC_LOG_ERR, "pthread_attr_setinheritsched failed, HA daemon exited. (%d)\n", pthread_ret);
+                main_exit(MTC_ERROR_SYSTEM_LEVEL_FAILURE);
+            }
+
             // succeeded to set stacksize. use it for all pthread_create();
             xhad_pthread_attr = &pthread_attr;
         }
@@ -553,29 +571,7 @@ static void move_to_root_cgroup(void) {
 void
 main_steady_state(void)
 {
-    struct sched_param sparam = {0};
-    int sched_policy;
     int status;
-    
-    // set scheduler policy and priority
-    sched_policy = SCHED_RR;
-    sparam.sched_priority = 50;
-
-
-    move_to_root_cgroup();
-
-    status = sched_setscheduler(getpid() , sched_policy, &sparam);
-    if (status == 0) 
-    {
-        log_message(MTC_LOG_DEBUG, "HA daemon set scheduler policy=%d priority=%d\n", 
-                    sched_policy, sparam.sched_priority);
-    }
-    else 
-    {
-        log_message(MTC_LOG_WARNING, "HA daemon set scheduler failed (sys %d) status=%d policy=%d priority=%d\n", 
-                    errno, 
-                    status, sched_policy, sparam.sched_priority);
-    }
 
     // mlockall
     status = mlockall(MCL_CURRENT);
@@ -606,7 +602,7 @@ main_save_scheduler(void)
     struct sched_param sparam = {0};
     int sched_policy;
     int status;
-    
+
     // get current scheduler policy and priority
 
     sched_policy = sched_getscheduler(getpid());
@@ -628,6 +624,46 @@ main_save_scheduler(void)
 }
 
 //
+//  main_set_scheduler
+//
+//  Set scheduling policy and priority of the process.
+//  Then all the threads will use the same policy and priority.
+//
+
+MTC_STATIC void
+main_set_scheduler(void)
+{
+    struct sched_param sparam = {0};
+    int sched_policy;
+    int status;
+
+    move_to_root_cgroup();
+
+    // set scheduler policy and priority
+    sched_policy = SCHED_RR;
+    // Some of kernel tasks are running at priority 50 (e.g. the primary IRQ
+    // handler threads) and priority 49 (e.g. the secondary IRQ handler
+    // threads). Set the priority of xHA as 48 as high as possible but less
+    // than these kernel tasks to avoid priority inversion between xHA and
+    // IRQ handlers.
+    sparam.sched_priority = 48;
+
+    status = sched_setscheduler(getpid() , sched_policy, &sparam);
+    if (status == 0) 
+    {
+        log_message(MTC_LOG_DEBUG, "HA daemon set scheduler policy=%d priority=%d\n", 
+                    sched_policy, sparam.sched_priority);
+    }
+    else 
+    {
+        log_message(MTC_LOG_ERR, "HA daemon set scheduler failed (sys %d) status=%d policy=%d priority=%d. HA daemon exited.\n", 
+                    errno, 
+                    status, sched_policy, sparam.sched_priority);
+        main_exit(MTC_ERROR_SYSTEM_LEVEL_FAILURE);
+    }
+}
+
+//
 //  main_reset_scheduler
 //
 //  This function should be called by child process.
@@ -640,7 +676,6 @@ main_reset_scheduler(void)
     int status;
     
     // set scheduler policy and priority
-
     status = sched_setscheduler(getpid() , sched_policy_save, &sparam_save);
 }
 
