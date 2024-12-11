@@ -64,10 +64,11 @@ extern MTC_S32  logmask;
 #define MTC_LOG_MASK_LM_TRACE   (1<<21)
 #define MTC_LOG_MASK_SCRIPT     (1<<22)
 #define MTC_LOG_MASK_SC_WARNING (1<<23)
+#define MTC_LOG_MASK_SYSLOG     (1<<24)
 
 #define LOG_MASK_BASE           18
 #define LOG_MASK_BITS           (32 - LOG_MASK_BASE)
-#define LOG_MASK_NAMES {"DUMPPACKET", "TRACE", "FH_TRACE", "LM_TRACE", "SCRIPT", "SC_WARNING", NULL}
+#define LOG_MASK_NAMES {"DUMPPACKET", "TRACE", "FH_TRACE", "LM_TRACE", "SCRIPT", "SC_WARNING", "SYSLOG", NULL}
 
 #ifdef NDEBUG
 #define DEFAULT_LOG_MASK    (0)

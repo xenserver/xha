@@ -984,7 +984,7 @@ send_hb()
         com_reader_unlock(sm_object);
     }
 
-    log_maskable_debug_message(DUMPPACKET, "HB: sending a heartbeat packet.\n");
+    log_maskable_debug_message(TRACE, "HB: sending a heartbeat packet.\n");
     maskable_dump(DUMPPACKET, (void *) &pkt, sizeof(pkt));
 
 
@@ -1146,7 +1146,7 @@ receive_hb()
             }
         }
 
-        log_maskable_debug_message(DUMPPACKET,
+        log_maskable_debug_message(TRACE,
                      "HB: heartbeat received from host (%d).\n", fm_index);
         maskable_dump(DUMPPACKET, (PMTC_S8) &pkt, recvd);
 
