@@ -292,8 +292,7 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
 
 
     }
-    
-    if (priority & MTC_LOG_SYSLOG)
+    if ((logmask & MTC_LOG_MASK_SYSLOG) || (priority & MTC_LOG_SYSLOG))
     {
         va_start(ap, fmt);
         vsyslog(LOG_PRI(priority), fmt, ap);
