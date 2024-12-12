@@ -131,6 +131,13 @@ hb_sm_updated(
 
 #define HB_SIG          'hahx'
 
+#define mssleep(X) \
+{ \
+    struct timespec sleep_ts = mstots(X), ts_rem; \
+    ts_rem = sleep_ts; \
+    while (nanosleep(&sleep_ts, &ts_rem)) sleep_ts = ts_rem; \
+}
+
 typedef struct _HB_PACKET {
     MTC_U32     signature;                                  // 4 bytes
     MTC_U32     checksum;                                   // 4 bytes
@@ -228,7 +235,11 @@ MTC_STATIC  void
 hb_cleanup_objects();
 
 MTC_STATIC  void *
-hb(
+hb_send(
+    void *ignore);
+
+MTC_STATIC  void *
+hb_receive(
     void *ignore);
 
 MTC_STATIC  MTC_BOOLEAN
@@ -289,7 +300,8 @@ MTC_S32
 hb_initialize(
     MTC_S32  phase)
 {
-    static pthread_t    hb_thread = 0;
+    static pthread_t    hb_receive_thread = 0;
+    static pthread_t    hb_send_thread = 0;
     MTC_S32             ret = MTC_SUCCESS;
 
     assert(-1 <= phase && phase <= 1);
@@ -321,9 +333,18 @@ hb_initialize(
             goto error;
         }
 
-        // start heartbeat thread
         hbvar.terminate = FALSE;
-        ret = pthread_create(&hb_thread, xhad_pthread_attr, hb, NULL);
+
+        // start heartbeat receiving thread
+        ret = pthread_create(&hb_receive_thread, xhad_pthread_attr, hb_receive, NULL);
+        if (ret)
+        {
+            ret = MTC_ERROR_HB_PTHREAD;
+            goto error;
+        }
+
+        // start heartbeat sending thread
+        ret = pthread_create(&hb_send_thread, xhad_pthread_attr, hb_send, NULL);
         if (ret)
         {
             ret = MTC_ERROR_HB_PTHREAD;
@@ -337,21 +358,6 @@ hb_initialize(
     case -1:
     default:
         log_message(MTC_LOG_INFO, "HB: hb_initialize(-1).\n");
-
-        if (hb_thread)
-        {
-#if 0
-            hb_spin_lock();
-            hbvar.terminate = TRUE;
-            hb_spin_unlock();
-
-            // wait for thread termination
-            if ((ret = pthread_join(hb_thread, NULL)))
-            {
-                pthread_kill(hb_thread, SIGKILL);
-            }
-#endif
-        }
 
         if (hbvar.watchdog != INVALID_WATCHDOG_HANDLE_VALUE)
         {
@@ -732,11 +738,11 @@ hb_sm_updated(
 //
 //  NAME:
 //
-//      hb
+//      hb_receive
 //
 //  DESCRIPTION:
 //
-//      The heartbeat main thread.
+//      The heartbeat receiving thread.
 //
 //  FORMAL PARAMETERS:
 //
@@ -749,7 +755,7 @@ hb_sm_updated(
 //
 
 MTC_STATIC  void *
-hb(
+hb_receive(
     void *ignore)
 {
     MTC_BOOLEAN         term = FALSE;
@@ -758,8 +764,6 @@ hb(
     now = last = _getms();
     do
     {
-        log_maskable_debug_message(TRACE, "HB: heartbeat thread activity log.\n");
-
         if (update_hbdomain())
         {
             start_fh(FALSE);
@@ -775,7 +779,7 @@ hb(
             FD_SET(hbvar.socket, &fds);
             nfds = _max(nfds, hbvar.socket);
 
-            wait = mstotv((_t1 * ONE_SEC - (now - last) < 0)? 0: _t1 * ONE_SEC - (now - last));
+            wait = mstotv(_max(_t1 * ONE_SEC - (now - last), 0));
             if (select(nfds + 1, &fds, NULL, NULL, &wait) > 0)
             {
                 receive_hb();
@@ -790,13 +794,6 @@ hb(
             continue;
             // note: the variable 'now' is used in next cycle
         }
-        // yes, it's time to send heartbeat
-
-        // check fist
-        hb_check_fist_sticky();
-
-        // send heartbeat
-        send_hb();
 
         // calculate and store diagnostic values
         {
@@ -826,6 +823,60 @@ hb(
         hb_spin_unlock();
 
         // note: the variable 'now' is used in next cycle
+    } while (!term);
+
+    return NULL;
+}
+
+
+//
+//  NAME:
+//
+//      hb_send
+//
+//  DESCRIPTION:
+//
+//      The heartbeat sending thread.
+//
+//  FORMAL PARAMETERS:
+//
+//          
+//  RETURN VALUE:
+//
+//
+//  ENVIRONMENT:
+//
+//
+
+MTC_STATIC  void *
+hb_send(
+    void *ignore)
+{
+    MTC_BOOLEAN         term = FALSE;
+    MTC_CLOCK           last, now;
+
+    do
+    {
+        // check fist
+        hb_check_fist_sticky();
+
+        last = _getms();
+
+        // send heartbeat
+        send_hb();
+
+        now = _getms();
+        mssleep(_max(_t1 * ONE_SEC - (now - last), 0));
+
+        hb_spin_lock();
+        //  Refresh watchdog counter to Wh
+        if (hbvar.watchdog != INVALID_WATCHDOG_HANDLE_VALUE)
+        {
+            watchdog_set(hbvar.watchdog, _Wh);
+        }
+        term = hbvar.terminate;
+        hb_spin_unlock();
+
     } while (!term);
 
     return NULL;
