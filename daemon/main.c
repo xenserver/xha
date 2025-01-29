@@ -552,8 +552,25 @@ main_terminate(
 
 static void move_to_root_cgroup(void) {
   FILE *f;
+  const char *cgroup_task_fname = NULL;
 
-  f = fopen("/sys/fs/cgroup/cpu/tasks", "w");
+  // Determine if we are using cgroup v1 or v2
+  f = fopen("/sys/fs/cgroup/cpu/cpu.rt_runtime_us", "rt");
+  if (f == NULL) {
+    // Try cgroup v2
+    f = fopen("/sys/fs/cgroup/cgroup.procs", "rt");
+    if (f == NULL) {
+      log_message(LOG_WARNING, "cpu.rt_runtime_us and cgroup.procs don't exist!\n");
+      return;
+    } else {
+      cgroup_task_fname = "/sys/fs/cgroup/cgroup.procs";
+    }
+  } else {
+    cgroup_task_fname = "/sys/fs/cgroup/cpu/tasks";
+  }
+  (void)fclose(f);
+
+  f = fopen(cgroup_task_fname, "w");
   if (f == NULL) {
     log_message(LOG_WARNING, "Can't open cgroups tasks file for writing (sys %d)\n", errno);
     return;
