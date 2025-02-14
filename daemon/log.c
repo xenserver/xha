@@ -50,6 +50,7 @@
 #include <sys/stat.h>
 #include <dlfcn.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 
 
 #include "mtctypes.h"
@@ -572,6 +573,7 @@ log_fsync()
         return;
     }
 
+
 #if USE_SEMAPHORE
     sem_wait(semaphore);
 #else
@@ -586,4 +588,29 @@ log_fsync()
 #else
     pthread_spin_unlock(&lock);
 #endif
+}
+
+//
+//
+//  NAME:
+//
+//      log_thread_id
+//
+//  DESCRIPTION:
+//
+//      Log thread ID.
+//
+//  paramaters
+//
+//      Thread name.
+//
+//  return value
+//
+//      none
+//
+void
+log_thread_id(
+    char *thread_name)
+{
+    log_message(MTC_LOG_INFO, "%s: Thread ID = %ld\n", thread_name, syscall(SYS_gettid));
 }

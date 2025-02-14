@@ -783,6 +783,7 @@ hb_receive(
     MTC_BOOLEAN         term = FALSE;
     MTC_CLOCK           last, now;
 
+    log_thread_id("HB_receive");
     now = last = _getms();
     do
     {
@@ -860,6 +861,7 @@ hb_send(
     MTC_BOOLEAN         term = FALSE;
     MTC_CLOCK           last, now;
 
+    log_thread_id("HB_send");
     do
     {
         // check fist
