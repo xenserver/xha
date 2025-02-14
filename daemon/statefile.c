@@ -47,6 +47,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <sys/syscall.h>
 
 //
 //
@@ -502,6 +503,7 @@ sfthread(
 #define PSTATUS_SUCCESS 1
 #define PSTATUS_ERROR   2
 
+    log_message(MTC_LOG_INFO, "SF: thread ID: %ld.\n", syscall(SYS_gettid));
     int print_status = PSTATUS_NONE;
 
     last = _getms();

@@ -45,6 +45,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/syscall.h>
 
 
 //
@@ -761,6 +762,7 @@ hb_receive(
     MTC_BOOLEAN         term = FALSE;
     MTC_CLOCK           last, now;
 
+    log_message(MTC_LOG_INFO, "HB_receive: thread ID: %ld.\n", syscall(SYS_gettid));
     now = last = _getms();
     do
     {
@@ -855,6 +857,7 @@ hb_send(
     MTC_BOOLEAN         term = FALSE;
     MTC_CLOCK           last, now;
 
+    log_message(MTC_LOG_INFO, "HB_send: thread ID: %ld.\n", syscall(SYS_gettid));
     do
     {
         // check fist

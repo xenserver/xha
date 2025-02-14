@@ -44,6 +44,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <assert.h>
+#include <sys/syscall.h>
 
 
 
@@ -305,6 +306,7 @@ script_service_thread(
     service_func_num = ((SCRIPT_SERVICE_THREAD_PARAM *) param)->funcnum;
     service_func = ((SCRIPT_SERVICE_THREAD_PARAM *) param)->func;
 
+    log_message(MTC_LOG_INFO, "SC: thread ID: %ld.\n", syscall(SYS_gettid));
     do
     {
         fd_set fds;

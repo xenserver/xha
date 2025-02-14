@@ -53,6 +53,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/syscall.h>
 
 
 //
@@ -592,6 +593,7 @@ lock_mgr(
     PCOM_DATA_SF    psf;
     MTC_S32         index;
 
+    log_message(MTC_LOG_INFO, "LM: thread ID: %ld.\n", syscall(SYS_gettid));
     while (TRUE)
     {
         // wait until state-file is updated or request status is changed
