@@ -39,6 +39,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <pthread.h>
+#include <stdint.h>
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
@@ -354,7 +355,7 @@ sf_checksum(
 {
     MTC_U32 sum = 0;
 
-    assert((((MTC_U32)p) & 3) == 0 && (((MTC_U32)end) & 3) == 0);
+    assert((((uintptr_t)p) & 3) == 0 && (((uintptr_t)end) & 3) == 0);
 
     while (p < end)
     {

@@ -994,7 +994,7 @@ watchdog_selffence(void)
     log_message(MTC_LOG_INFO, "watchdog_selffence.\n");
     
     // Attempt to shutdown domain 0 immediately
-    do_domain_shutdown_self(ret);
+    do_domain_shutdown_self(MTC_ERROR_HB_FENCEREQUESTED);
     // We shouldn't get here but if we do then invoke the watchdog:
 
     if (instance_num == 0)

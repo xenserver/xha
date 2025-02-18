@@ -114,6 +114,7 @@ typedef struct ha_common_object
     MTC_U32 in_use;
     MTC_U32 ref_count;
     MTC_U32 checksum;   // to detect modification by reader
+    pthread_mutex_t thread_id_record_table_mutex;
     THREAD_ID_RECORD thread_id_record_table[THREAD_ID_RECORD_NUM];
 } HA_COMMON_OBJECT;
 
@@ -536,6 +537,7 @@ set_thread_id_record(
     clock_gettime(CLOCK_MONOTONIC, &ts);
     now = tstoms(ts);
 
+    pthread_mutex_lock(&object->thread_id_record_table_mutex);
     switch (lock_state) {
     case LOCK_STATE_READER_ACQUIREING:
     case LOCK_STATE_WRITER_ACQUIREING:
@@ -550,6 +552,7 @@ set_thread_id_record(
                 object->thread_id_record_table[i].lock_state = lock_state;
                 object->thread_id_record_table[i].thread_id = self;
                 object->thread_id_record_table[i].changed_time = now;
+                pthread_mutex_unlock(&object->thread_id_record_table_mutex);
                 return;
             }
         }
@@ -570,12 +573,14 @@ set_thread_id_record(
                 //
                 object->thread_id_record_table[i].lock_state = lock_state;
                 object->thread_id_record_table[i].changed_time = now;
+                pthread_mutex_unlock(&object->thread_id_record_table_mutex);
                 return;
             }
         }
         log_message(MTC_LOG_WARNING, "COM: thread_id %d not found in thraed_id_record_table.\n", self);
         break;
     }
+    pthread_mutex_unlock(&object->thread_id_record_table_mutex);
     assert(FALSE);
     return ;
 }
@@ -754,6 +759,13 @@ com_create(
         handle = (HA_COMMON_OBJECT_HANDLE_INTERNAL *) *object_handle;
         object->ref_count ++;
         handle->object->in_use++;
+        pthread_ret = pthread_mutex_init(&handle->object->thread_id_record_table_mutex, NULL);
+        if (pthread_ret != 0) 
+        {
+            log_internal(MTC_LOG_ERR, "COM: (%s) pthread_mutex_init failed (sys %d).\n", __func__, pthread_ret);
+            ret = MTC_ERROR_COM_PTHREAD;
+            goto error_return;
+        }
         set_thread_id_record(handle->object, LOCK_STATE_WRITER_ACQUIREING);
         LEAVE_CS;
 
@@ -769,6 +781,7 @@ com_create(
 
             pthread_ret = pthread_rwlock_wrlock(&handle->object->rwlock);
             if (fist_on("com.pthread")) pthread_ret = FIST_PTHREAD_ERRCODE;
+
             
             ENTER_CS;
             set_thread_id_record(handle->object, LOCK_STATE_WRITER_ACQUIRED);
@@ -937,6 +950,7 @@ com_close(
         {
             log_message(MTC_LOG_WARNING, "COM: pthread_rwlock_destroy failed (sys %d).\n", pthread_ret);
         }
+        pthread_ret = pthread_mutex_destroy(&object->thread_id_record_table_mutex);
         free_object(object);
     }
  error_return:
@@ -1097,7 +1111,6 @@ com_writer_lock(
     HA_COMMON_OBJECT_HANDLE_INTERNAL *handle = object_handle;
     int pthread_ret;
 
-    ENTER_CS;
     if (!valid_object_handle(handle)) 
     {
         log_internal(MTC_LOG_ERR, "COM: (%s) invalid handle.\n", __func__);
@@ -1105,12 +1118,12 @@ com_writer_lock(
         ret = MTC_ERROR_COM_INVALID_HANDLE;
         goto error_return;
     }
+    ENTER_CS;
     handle->object->in_use++;
-    set_thread_id_record(handle->object, LOCK_STATE_WRITER_ACQUIREING);
     LEAVE_CS;
+    set_thread_id_record(handle->object, LOCK_STATE_WRITER_ACQUIREING);
     pthread_ret = pthread_rwlock_wrlock(&handle->object->rwlock);
     if (fist_on("com.pthread")) pthread_ret = FIST_PTHREAD_ERRCODE;
-    ENTER_CS;
     set_thread_id_record(handle->object, LOCK_STATE_WRITER_ACQUIRED);
     if (pthread_ret != 0) 
     {
@@ -1122,7 +1135,6 @@ com_writer_lock(
     *buffer = handle->object->buffer;
 
  error_return:
-    LEAVE_CS;
     if (ret != MTC_SUCCESS) 
     {
         log_status(ret, NULL);
@@ -1157,7 +1169,6 @@ com_writer_unlock(
     int pthread_ret;
     HA_COMMON_OBJECT_CALLBACK_LIST_ITEM *c;
 
-    ENTER_CS;
     if (!valid_object_handle(handle)) 
     {
         log_internal(MTC_LOG_ERR, "COM: (%s) invalid handle.\n", __func__);
@@ -1166,6 +1177,7 @@ com_writer_unlock(
         goto error_return;
     }
 
+    ENTER_CS;
     for (c = handle->object->callback_list_head; c != NULL; c = c->next) 
     {
         c->func(c->object_handle, handle->object->buffer);
@@ -1176,6 +1188,8 @@ com_writer_unlock(
 
 
     handle->object->in_use--;
+    LEAVE_CS;
+
     set_thread_id_record(handle->object, LOCK_STATE_NONE);
     pthread_ret = pthread_rwlock_unlock(&handle->object->rwlock);
     if (fist_on("com.pthread")) pthread_ret = FIST_PTHREAD_ERRCODE;
@@ -1187,7 +1201,6 @@ com_writer_unlock(
     }
 
  error_return:
-    LEAVE_CS;
     if (ret != MTC_SUCCESS) 
     {
         log_status(ret, NULL);
@@ -1224,7 +1237,6 @@ com_reader_lock(
     HA_COMMON_OBJECT_HANDLE_INTERNAL *handle = object_handle;
     int pthread_ret;
 
-    ENTER_CS;
     if (!valid_object_handle(handle)) 
     {
         log_internal(MTC_LOG_ERR, "COM: (%s) invalid handle.\n", __func__);
@@ -1232,12 +1244,12 @@ com_reader_lock(
         ret = MTC_ERROR_COM_INVALID_HANDLE;
         goto error_return;
     }
+    ENTER_CS;
     handle->object->in_use++;
-    set_thread_id_record(handle->object, LOCK_STATE_READER_ACQUIREING);
     LEAVE_CS;
+    set_thread_id_record(handle->object, LOCK_STATE_READER_ACQUIREING);
     pthread_ret = pthread_rwlock_rdlock(&handle->object->rwlock);
     if (fist_on("com.pthread")) pthread_ret = FIST_PTHREAD_ERRCODE;
-    ENTER_CS;
     set_thread_id_record(handle->object, LOCK_STATE_READER_ACQUIRED);
     if (pthread_ret != 0) 
     {
@@ -1248,7 +1260,6 @@ com_reader_lock(
     *buffer = handle->object->buffer;
 
  error_return:
-    LEAVE_CS;
     if (ret != MTC_SUCCESS) 
     {
         log_status(ret, NULL);
@@ -1281,7 +1292,6 @@ com_reader_unlock(
     HA_COMMON_OBJECT_HANDLE_INTERNAL *handle = object_handle;
     int pthread_ret;
 
-    ENTER_CS;
     if (!valid_object_handle(handle)) 
     {
         log_internal(MTC_LOG_ERR, "COM: (%s) invalid handle.\n", __func__);
@@ -1290,10 +1300,12 @@ com_reader_unlock(
         goto error_return;
     }
 
+    ENTER_CS;
 #ifndef NDEBUG
     assert(handle->object->checksum == calc_checksum_object_buffer(handle->object));
 #endif //NDEBUG
     handle->object->in_use--;
+    LEAVE_CS;
     set_thread_id_record(handle->object, LOCK_STATE_NONE);
     pthread_ret = pthread_rwlock_unlock(&handle->object->rwlock);
     if (fist_on("com.pthread")) pthread_ret = FIST_PTHREAD_ERRCODE;
@@ -1305,7 +1317,6 @@ com_reader_unlock(
     }
 
  error_return:
-    LEAVE_CS;
     if (ret != MTC_SUCCESS) 
     {
         log_status(ret, NULL);
