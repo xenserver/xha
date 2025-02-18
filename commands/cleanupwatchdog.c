@@ -237,7 +237,7 @@ do_watchdog_disable(uint32_t *id)
 
     hypercall.op = __HYPERVISOR_sched_op;
     hypercall.arg[0] = SCHEDOP_watchdog;
-    hypercall.arg[1] = (__u64) (unsigned int) &arg;  // pointer to u64
+    hypercall.arg[1] = (uintptr_t) &arg;  // pointer to u64
     arg.id = *id;
     arg.timeout = 0;
 
