@@ -54,7 +54,7 @@
 //
 
 #include <sys/time.h>
-
+#include <stddef.h>
 
 //
 //
@@ -442,8 +442,7 @@ MTC_ASSERT_SIZE(sizeof (void *) == MTC_POINTER_SIZE);
 
 #define _rounddiv(num, div)     (((num) + (div) - 1) / (div))
 #define _roundup(num, div)      (_rounddiv(num, div) * (div))
-#define _struct_offset(structname, element) \
-                                ((unsigned int)&(((structname *)0)->element))
+#define _struct_offset(structname, element) offsetof(structname, element)
 
 #ifndef _min
 #define _min(X, Y)      ((X < Y)? (X): (Y))
