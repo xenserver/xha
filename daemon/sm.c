@@ -2814,6 +2814,8 @@ check_sigs(
         return signaled;
 }
 
+#define NSEC_PER_SEC 1000000000
+
 MTC_STATIC MTC_BOOLEAN
 sm_wait_signals_sm_hb_sf(
     MTC_BOOLEAN sm_sig,
@@ -2822,16 +2824,23 @@ sm_wait_signals_sm_hb_sf(
     MTC_CLOCK   timeout)
 {
     MTC_BOOLEAN signaled;
-    MTC_CLOCK   start = _getms();
+
+    struct timespec deadline;
 
     if (timeout == 0)
     {
         return FALSE;
     }
 
+    struct timespec timeout_ts = mstots(timeout);
+    clock_gettime(CLOCK_REALTIME, &deadline);
+    deadline.tv_nsec += timeout_ts.tv_nsec;
+    deadline.tv_sec += timeout_ts.tv_sec;
+    deadline.tv_sec += deadline.tv_nsec / NSEC_PER_SEC;
+    deadline.tv_nsec %= NSEC_PER_SEC;
+
     pthread_mutex_lock(&smvar.mutex);
-    while (!(signaled = check_sigs(sm_sig, hb_sig, sf_sig)) &&
-           ((timeout < 0)? TRUE: (_getms() - start < timeout)))
+    while (!(signaled = check_sigs(sm_sig, hb_sig, sf_sig)))
     {
         if (timeout < 0)
         {
@@ -2839,10 +2848,8 @@ sm_wait_signals_sm_hb_sf(
         }
         else
         {
-            pthread_mutex_unlock(&smvar.mutex);
-            mssleep(100);
-            pthread_mutex_lock(&smvar.mutex);
-        }
+            pthread_cond_timedwait(&smvar.cond, &smvar.mutex, &deadline);            
+        }        
     }
     pthread_mutex_unlock(&smvar.mutex);
 
