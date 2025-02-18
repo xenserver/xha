@@ -4,7 +4,7 @@
 
 CC=gcc
 SOURCEDIR=..
-CFLAGS=-g -Wall -Wno-multichar
+CFLAGS=-g -Wall -Wno-multichar -Werror=pointer-to-int-cast
 
 
 OBJDIR=$(SOURCEDIR)/debug
