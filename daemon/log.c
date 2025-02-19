@@ -49,6 +49,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
+#include <stdlib.h>
+#include <execinfo.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 
@@ -412,60 +414,35 @@ log_logmask(void)
 //
 //
 
-#define BACKTRACE_SIZE 10
-#define FILL_RETURN_ADDRESS(x)                          \
-    if (__builtin_frame_address(x) == 0)                \
-    {                                                   \
-        return_address[x] = NULL;                       \
-        goto end_fill;                                  \
-    }                                                   \
-    return_address[x] = __builtin_return_address(x);    \
-
-        
+#define BACKTRACE_SIZE 10        
 
 void
 log_backtrace(MTC_S32 priority)
 {
     int level;
-    Dl_info dli;
     void *return_address[BACKTRACE_SIZE] = {NULL};
-
-    level = 0;
-
-    FILL_RETURN_ADDRESS(0);
-    FILL_RETURN_ADDRESS(1);
-    FILL_RETURN_ADDRESS(2);
-    FILL_RETURN_ADDRESS(3);
-    FILL_RETURN_ADDRESS(4);
-    FILL_RETURN_ADDRESS(5);
-    FILL_RETURN_ADDRESS(6);
-    FILL_RETURN_ADDRESS(7);
-    FILL_RETURN_ADDRESS(8);
-    FILL_RETURN_ADDRESS(9);
- end_fill:
-
+    
     log_message(priority, "backtrace -------------\n");
+    int nptrs = backtrace(return_address, BACKTRACE_SIZE);
+    if (nptrs <= 0 || (unsigned)nptrs > BACKTRACE_SIZE) {
+        log_message(priority, "Cannot get backtrace");
+        return;
+    }
+    char **symbols = backtrace_symbols(return_address, BACKTRACE_SIZE);
 
     for (level = 0;
-         level < BACKTRACE_SIZE;
+         level < nptrs;
          level ++)
     {
-        int err;
-
-        if (return_address[level] == NULL)
-        {
-            break;
+        if (symbols && symbols[level]) {
+            log_message(priority, "  %2d: (%p) %s\n", level, return_address[level], symbols[level]);
         }
-        err = dladdr(return_address[level], &dli);
-        if (err == 0 || dli.dli_sname == NULL) 
+        else
         {
             log_message(priority, "  %2d: (%p) --\n", level, return_address[level]);
         }
-        else 
-        {
-            log_message(priority, "  %2d: (%p) %s\n", level, return_address[level], dli.dli_sname);
-        }
     }
+    free(symbols);
     log_message(priority, "backtrace -------------\n");
     return;
 }
