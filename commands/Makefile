@@ -22,23 +22,23 @@ OBJS    += $(OBJDIR)/weightctl.o
 all: $(OBJS) $(TARGET)
 
 $(OBJDIR)/calldaemon: $(OBJS) $(HALIBS)
-	$(CC) $(OBJDIR)/calldaemon.o $(LIBS) $(HALIBS) -o $@
+	$(CC) $(OBJDIR)/calldaemon.o $(HALIBS) $(LIBS) -o $@
 	@chmod 0755 $@
 
 $(OBJDIR)/writestatefile: $(OBJS) $(HALIBS)
-	$(CC) $(OBJDIR)/writestatefile.o $(OBJDIR)/stubs.o $(LIBS) $(HALIBS) -o $@
+	$(CC) $(OBJDIR)/writestatefile.o $(OBJDIR)/stubs.o $(HALIBS) $(LIBS) -o $@
 	@chmod 0755 $@
 
 $(OBJDIR)/dumpstatefile:$(OBJS) $(HALIBS)
-	$(CC) $(OBJDIR)/dumpstatefile.o $(OBJDIR)/stubs.o $(LIBS) $(HALIBS) -o $@
+	$(CC) $(OBJDIR)/dumpstatefile.o $(OBJDIR)/stubs.o $(HALIBS) $(LIBS) -o $@
 	@chmod 0755 $@
 
 $(OBJDIR)/cleanupwatchdog:$(OBJS) $(HALIBS)
-	$(CC) $(OBJDIR)/cleanupwatchdog.o $(LIBS) $(HALIBS) -o $@
+	$(CC) $(OBJDIR)/cleanupwatchdog.o $(HALIBS) $(LIBS) -o $@
 	@chmod 0755 $@
 
 $(OBJDIR)/weightctl:$(OBJS) $(HALIBS)
-	$(CC) $(OBJDIR)/weightctl.o $(LIBS) $(HALIBS) -o $@
+	$(CC) $(OBJDIR)/weightctl.o $(HALIBS) $(LIBS) -o $@
 	@chmod 0755 $@
 
 install: $(TARGET)
