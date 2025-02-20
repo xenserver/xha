@@ -1,0 +1,53 @@
+name: "CodeChecker analysis"
+
+on:
+  push:
+  pull_request:
+    
+concurrency: # On new push, cancel old workflows from the same PR, branch or tag:
+  group: ${{ github.workflow }}-${{github.event_name}}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - name: "Check out repository"
+        uses: actions/checkout@v4
+
+      - name: "Install dependencies"
+        run: sudo apt-get install -y libxml2-dev libxen-dev bear
+
+      # ldlogger.so in codechecker seems to have been built for 32-bit,
+      # use bear instead
+      - name: "Create compilation commands database"
+        run: bear -- make debug
+
+      # SARIF output conversion support is only in master
+      # hence install-custom is set to true
+      # Uses Cross-Translation-Unit analysis, which is best supported in CodeChecker, not scan-build
+      - uses: whisperity/codechecker-analysis-action@v1
+        id: codechecker
+        with:
+          install-custom: true
+          logfile: ${{ github.workspace }}/compile_commands.json
+          ctu: true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: "CodeChecker Bug Reports"
+          path: ${{ steps.codechecker.outputs.result-html-dir }}
+
+      # TODO: how to get the path here?
+      # for some reason this exits with 2 probably to mean errors were found, but we need a successful exit
+      - name: "Convert to SARIF"
+        run: /home/runner/work/xha/xha/CodeChecker/analyzer/build/CodeChecker/bin/CodeChecker parse -e sarif ${{ steps.codechecker.outputs.analyze-output }} -o codechecker.sarif
+        continue-on-error: true
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+            sarif_file: codechecker.sarif
+            category: codechecker
