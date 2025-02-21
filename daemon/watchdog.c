@@ -752,7 +752,7 @@ watchdog_create(
     new = malloc(sizeof(WATCHDOG_INSTANCE));
     if (new == NULL) 
     {
-        log_internal(MTC_LOG_ERR, "WD: cannnot malloc size = %d.\n", sizeof(WATCHDOG_INSTANCE));
+        log_internal(MTC_LOG_ERR, "WD: cannnot malloc size = %zu.\n", sizeof(WATCHDOG_INSTANCE));
         ret = MTC_ERROR_WD_INSUFFICIENT_RESOURCE;
         goto error_return;
     }
