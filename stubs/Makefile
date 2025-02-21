@@ -16,12 +16,12 @@ TARGET= $(SCRIPTDIR)/cfread \
 $(FRC)
 
 all:
-	(cd cfread-libxml2; make)
+	$(MAKE) -C cfread-libxml2
 
 install:
 	-mkdir -p $(DESTDIR)$(SCRIPTDIR)
 	-cp ha_* cfread $(DESTDIR)$(SCRIPTDIR)
 
 clean:
-	(cd cfread-libxml2; make clean)
+	$(MAKE) -C cfread-libxml2 clean
 	-rm -f $(TARGET)

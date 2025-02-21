@@ -20,7 +20,3 @@ LOGCONFDIR=/etc/logrotate.d
 %.o: %.c $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 	
-%.a: %.c $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(INCLUDES) -c $<
-	@$(AR) rv $@ $*.o
-	@$(RM) $*.o

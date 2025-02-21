@@ -14,7 +14,6 @@ all: $(TARGET)
 mtcerrno.h: errdef.awk mtcerrno.def 
 	gawk -f errdef.awk mtcerrno.def > $@
 
-.PHONY: buildid.h
 buildid.h:
 	sh buildid.sh > $@
 
