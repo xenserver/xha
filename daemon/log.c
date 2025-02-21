@@ -253,14 +253,14 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
         return;
     }
 
-#if USE_SEMAPHORE
-    sem_wait(semaphore);
-#else
-    pthread_spin_lock(&lock);
-#endif
-
     if (priority & MTC_LOG_PRIVATELOG && fpLogfile != NULL && privatelogflag)
     {
+#if USE_SEMAPHORE
+        sem_wait(semaphore);
+#else
+        pthread_spin_lock(&lock);
+#endif
+
         MTC_S32 i = 0;
 
         while (prioritynames[i].c_val != -1 &&
@@ -290,20 +290,19 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
         // fsync(fileno(fpLogfile));
         //
 
-
+#if USE_SEMAPHORE
+        sem_post(semaphore);
+#else
+        pthread_spin_unlock(&lock);
+#endif
     }
+
     if ((logmask & MTC_LOG_MASK_SYSLOG) || (priority & MTC_LOG_SYSLOG))
     {
         va_start(ap, fmt);
         vsyslog(LOG_PRI(priority), fmt, ap);
         va_end(ap);
     }
-
-#if USE_SEMAPHORE
-    sem_post(semaphore);
-#else
-    pthread_spin_unlock(&lock);
-#endif
 }
 
 
