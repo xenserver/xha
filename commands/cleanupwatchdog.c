@@ -391,13 +391,16 @@ main(
         id[idnum++] = strtol(buf, &endptr, 10);
         if (*endptr != '\0') 
         {
+           (void)fclose(fp);
             return MTC_EXIT_INVALID_PARAMETER;
         }
         if (idnum >= MAX_WATCHDOG_INSTANCE) 
         {
+           (void)fclose(fp);
             return MTC_EXIT_INVALID_PARAMETER;
         }
     }
+    (void)fclose(fp);
     for (idindex = 0; idindex < idnum; idindex++)
     {
         if (id[idindex] == 0) 
