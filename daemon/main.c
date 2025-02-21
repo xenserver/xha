@@ -366,7 +366,6 @@ main(
 
     //  #### Initialize internal modules (phase 0 and 1)
 
-    init_index = 0;
     for (phase = 0; phase < 2; phase++)
     {
         for (init_index = 0; init_index < N_INIT_FUNCS; init_index++)
