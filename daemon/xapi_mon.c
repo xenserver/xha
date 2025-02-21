@@ -47,6 +47,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/syscall.h>
 
 
 //
@@ -300,6 +301,7 @@ xapimon(
     PMTC_S8             perr_string = err_string;
     MTC_STATUS          status;
 
+    log_message(MTC_LOG_INFO, "Xapimon: thread ID: %ld.\n", syscall(SYS_gettid));
     while (!terminate)
     {
         log_maskable_debug_message(TRACE, "Xapimon: Xapi monitor thread activity log.\n");

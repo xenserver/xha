@@ -42,6 +42,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/syscall.h>
 
 
 
@@ -715,6 +716,7 @@ sm(
     MTC_STATUS  status;
     MTC_U32     weight;
 
+    log_message(MTC_LOG_INFO, "SM: thread ID: %ld.\n", syscall(SYS_gettid));
     // commit initial weight
     weight = commit_weight();
     log_message(MTC_LOG_INFO, "Initial weight = %d.\n", weight);
@@ -1654,6 +1656,7 @@ MTC_STATIC void *
 sm_worker(
     void *ignore)
 {
+    log_message(MTC_LOG_INFO, "SM_Worker: thread ID: %ld.\n", syscall(SYS_gettid));
     while (!smvar.terminate)
     {
         mssleep(SM_WORKER_INTERVAL);

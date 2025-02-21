@@ -43,6 +43,7 @@
 #include <limits.h>
 #include <pthread.h>
 #include <signal.h>
+#include <sys/syscall.h>
 
 
 //
@@ -375,6 +376,7 @@ bm(
     static MTC_BOND_STATUS  bond_status = BOND_STATUS_NOERR;
     PCOM_DATA_BM            pbm;
 
+    log_message(MTC_LOG_INFO, "BM: thread ID: %ld.\n", syscall(SYS_gettid));
     do
     {
         log_maskable_debug_message(TRACE, "BM: bonding monitor thread activity log.\n");

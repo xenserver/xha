@@ -67,6 +67,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <sys/mman.h>
+#include <sys/syscall.h>
 
 #include "log.h"
 #include "mtcerrno.h"
@@ -737,6 +738,7 @@ MTC_STATIC  void *
 main_sighandler(
     void *ignore)
 {
+    log_message(MTC_LOG_INFO, "Main_sighandler: thread ID: %ld.\n", syscall(SYS_gettid));
     while (!daemon_vars.terminate_requested)
     {
         main_sleep (MAIN_SIGHANDLER_INTERVAL);
