@@ -195,7 +195,8 @@ extern void
 log_message(
     MTC_S32 priority,
     PMTC_S8 fmt,
-    ...);
+    ...)
+__attribute__((format (printf, 2, 3)));
 
 
 // log_bin

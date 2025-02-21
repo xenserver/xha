@@ -45,6 +45,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 
 //
@@ -1454,7 +1455,7 @@ hb_check_fist(
     if (target_delay != 0)
     {
         log_message(MTC_LOG_DEBUG,
-                    "HB(FIST): heartbeat delay is %d ms\n", target_delay);
+                    "HB(FIST): heartbeat delay is %"PRId64" ms\n", target_delay);
 
         ts = ts_rem = mstots(target_delay);
         while (nanosleep(&ts, &ts_rem)) ts = ts_rem;
@@ -1485,7 +1486,7 @@ hb_check_fist_sticky()
     if (target_delay != 0)
     {
         log_message(MTC_LOG_DEBUG,
-                    "HB(FIST): heartbeat delay is %d ms\n", target_delay);
+                    "HB(FIST): heartbeat delay is %"PRId64" ms\n", target_delay);
 
         ts = mstots(target_delay);
         while (nanosleep(&ts, &ts_rem)) ts = ts_rem;
