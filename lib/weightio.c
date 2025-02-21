@@ -121,7 +121,7 @@
 MTC_STATUS
 open_hostweight_file(int *fd, int *err_no)
 {
-    if ((*fd = open(HA_HOST_WEIGHT_FILE, O_RDWR|O_CREAT)) < 0)
+    if ((*fd = open(HA_HOST_WEIGHT_FILE, O_RDWR|O_CREAT, 00400)) < 0)
     {
         *err_no = errno;
         return MTC_ERROR_WEIGHT_OPEN;

@@ -37,6 +37,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <signal.h>
+#include <inttypes.h>
 
 #include "mtctypes.h"
 #include "mtcerrno.h"
@@ -269,7 +270,7 @@ MTC_STATIC HA_COMMON_OBJECT_HANDLE_INTERNAL
     new_handle = malloc(sizeof(HA_COMMON_OBJECT_HANDLE_INTERNAL));
     if (new_handle == NULL) 
     {
-        log_internal(MTC_LOG_ERR, "COM: cannot allocate for object_handle (size=%d).\n", sizeof(HA_COMMON_OBJECT_HANDLE_INTERNAL));
+        log_internal(MTC_LOG_ERR, "COM: cannot allocate for object_handle (size=%zu).\n", sizeof(HA_COMMON_OBJECT_HANDLE_INTERNAL));
         return NULL;
     }
     new_handle->object = object;
@@ -307,7 +308,7 @@ new_object(
     new = malloc(sizeof(HA_COMMON_OBJECT));
     if (new == NULL) 
     {
-        log_internal(MTC_LOG_ERR, "COM: cannot allocate for object (size=%d).\n", sizeof(HA_COMMON_OBJECT));
+        log_internal(MTC_LOG_ERR, "COM: cannot allocate for object (size=%zu).\n", sizeof(HA_COMMON_OBJECT));
         return NULL;
     }
     new->next = NULL;
@@ -452,7 +453,7 @@ MTC_STATIC HA_COMMON_OBJECT_CALLBACK_LIST_ITEM
     new = malloc(sizeof(HA_COMMON_OBJECT_CALLBACK_LIST_ITEM));
     if (new == NULL) 
     {
-        log_internal(MTC_LOG_ERR, "COM: cannot allocate for callback (size=%d).\n", sizeof(HA_COMMON_OBJECT_CALLBACK_LIST_ITEM));
+        log_internal(MTC_LOG_ERR, "COM: cannot allocate for callback (size=%zu).\n", sizeof(HA_COMMON_OBJECT_CALLBACK_LIST_ITEM));
         return NULL;
     }
     new->next = NULL;
@@ -573,7 +574,7 @@ set_thread_id_record(
                 return;
             }
         }
-        log_message(MTC_LOG_WARNING, "COM: thread_id %d not found in thraed_id_record_table.\n", self);
+        log_message(MTC_LOG_WARNING, "COM: thread_id %lu not found in thread_id_record_table.\n", self);
         break;
     }
     assert(FALSE);
@@ -619,7 +620,7 @@ com_log_all_objects(
             {
                 if (object->thread_id_record_table[tid_index].lock_state != LOCK_STATE_NONE)
                 {
-                    log_message(MTC_LOG_DEBUG, "COM:     lock_state=%d thread_id=%x changed_time=%d(ms) .\n",
+                    log_message(MTC_LOG_DEBUG, "COM:     lock_state=%d thread_id=0x%lx changed_time=%"PRId64"(ms) .\n",
                                 object->thread_id_record_table[tid_index].lock_state,
                                 object->thread_id_record_table[tid_index].thread_id,
                                 now - object->thread_id_record_table[tid_index].changed_time
