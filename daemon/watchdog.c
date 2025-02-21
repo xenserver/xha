@@ -407,7 +407,7 @@ do_watchdog_hypercall(uint32_t *id, uint32_t timeout, MTC_STATUS currentstatus)
 
     hypercall.op = __HYPERVISOR_sched_op;
     hypercall.arg[0] = SCHEDOP_watchdog;
-    hypercall.arg[1] = (__u64) (unsigned int) &arg;  // pointer to u64
+    hypercall.arg[1] = (uintptr_t) &arg;  // pointer to u64
     arg.id = *id;
     arg.timeout = timeout;
     
@@ -501,7 +501,7 @@ do_domain_shutdown_self(MTC_STATUS currentstatus)
 
     hypercall.op = __HYPERVISOR_sched_op;
     hypercall.arg[0] = SCHEDOP_remote_shutdown;
-    hypercall.arg[1] = (__u64) (unsigned int) &arg;  // pointer to u64
+    hypercall.arg[1] = (uintptr_t) &arg;  // pointer to u64
     arg.domain_id = 0;
     arg.reason = 1; // reboot
     
@@ -994,7 +994,7 @@ watchdog_selffence(void)
     log_message(MTC_LOG_INFO, "watchdog_selffence.\n");
     
     // Attempt to shutdown domain 0 immediately
-    do_domain_shutdown_self(ret);
+    do_domain_shutdown_self(MTC_ERROR_HB_FENCEREQUESTED);
     // We shouldn't get here but if we do then invoke the watchdog:
 
     if (instance_num == 0)

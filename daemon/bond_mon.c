@@ -358,6 +358,7 @@ bm_initialize(
         com_close(bm_object);
         bm_object = HA_COMMON_OBJECT_INVALID_HANDLE_VALUE;
 #endif
+        ret = MTC_ERROR_INVALID_PARAMETER;
 
         break;
     }
