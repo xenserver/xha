@@ -219,7 +219,9 @@ main(
     //  logrotate may send SIGHUP regardless of the state of xha. 
     //
 
-    sigignore(SIGHUP);
+    struct sigaction ignore = { 0 };
+    ignore.sa_handler = SIG_IGN;
+    sigaction(SIGHUP, &ignore, NULL);
         
     //  Initialize ha_config in BSS.
     //  (static initialization causes a warning for unknown reason)
@@ -315,7 +317,7 @@ main(
 
     for (sig = 1; sig < _NSIG; sig++)
     {
-        sigignore(sig);
+        sigaction(sig, &ignore, NULL);
     }
 
     //  #### Set resource limit of core size to max value
@@ -420,18 +422,19 @@ main(
 //
 //  sigcatch -
 //
-//  signal handler for sigset().
+//  signal handler for sigaction().
 //
 //  sigcatch may be invoked in any thread context in any time.
 //  Acquiring any lock which does not support recursive in this function causes deadlock.
+//
+//  action.sa_flags is 0, which means that the signal that triggerred the handler
+//  is automatically blocked already
 //
 
 MTC_STATIC void
 sigcatch(
     int signo)
 {
-    sigset(signo, sigcatch);
-
     switch (signo)
     {
     case SIGTERM:
@@ -491,10 +494,21 @@ post_phase_init(
         }
 
         //  Now it's time to catch signals.
+        static const int signals[] = { SIGTERM, SIGCHLD, SIGHUP };
+        sigset_t mask;
+        unsigned i;
+        struct sigaction action = { 0 };
+        action.sa_handler = sigcatch;
+        sigemptyset(&mask);
 
-        sigset(SIGTERM, sigcatch);
-        sigset(SIGCHLD, sigcatch);
-        sigset(SIGHUP, sigcatch);
+        for (i = 0; i < sizeof(signals) / sizeof(signals[0]); i++) {
+            int sig = signals[i];
+            sigaddset(&mask, sig);
+
+            sigaction(sig, &action, NULL);
+        }
+
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);
     }
 }
 
