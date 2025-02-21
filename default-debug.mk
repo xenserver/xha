@@ -10,7 +10,7 @@ OBJDIR=$(SOURCEDIR)/debug
 
 INCDIR=$(SOURCEDIR)/include
 INCLUDES=-I$(INCDIR)
-LIBS=-lxml2 -lrt
+LIBS=-lxml2 -lrt $(LDFLAGS)
 HALIBS=$(OBJDIR)/libxha.a
 INSDIR=/usr/libexec/xapi/cluster-stack/xhad
 LOGCONFDIR=/etc/logrotate.d
