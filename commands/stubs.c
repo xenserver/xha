@@ -41,6 +41,7 @@
 
 #include "mtctypes.h"
 #include "mtcerrno.h"
+#include "log.h"
 
 void
 log_message(
@@ -51,7 +52,7 @@ log_message(
     va_list     ap;
 
     va_start(ap, fmt);
-    fprintf(stderr, fmt, ap);
+    (void)vfprintf(stderr, fmt, ap);
     va_end(ap);
 
     fflush(stderr);
