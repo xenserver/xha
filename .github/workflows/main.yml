@@ -1,0 +1,41 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  merge_group:
+
+concurrency: # On new push, cancel old workflows from the same PR, branch or tag:
+  group: ${{ github.workflow }}-${{github.event_name}}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies (apt)
+        run: sudo apt-get install -y libxml2-dev libxen-dev
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: make
+
+  build-container:
+    strategy:
+      matrix:
+        image:
+          - fedora:latest
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+    steps:
+      - name: Install dependencies (dnf)
+        run: dnf install -y libxml2-devel xen-devel make gcc
+      
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: make

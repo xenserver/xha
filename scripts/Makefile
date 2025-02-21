@@ -18,7 +18,7 @@ $(TARGET): $(TARGET_GENERR)
 	@chmod 0755 $@
 
 $(TARGET_GENERR): $(OBJS_GENERR) $(HALIBS)
-	$(CC) $(OBJS_GENERR) $(LIBS) $(HALIBS) -o $@
+	$(CC) $(OBJS_GENERR) $(HALIBS) $(LIBS) -o $@
 	@chmod 0755 $@
 
 $(HALIBS):

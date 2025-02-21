@@ -817,7 +817,7 @@ rendezvous(
     MTC_BOOLEAN on_statefile)
 {
 #if RENDEZVOUS_FAULT_HANDLING
-    void rendezvous_wait(p1, p2)
+    void rendezvous_wait(SM_PHASE p1, SM_PHASE p2)
     {
         PCOM_DATA_SM    psm;
         PCOM_DATA_HB    phb;
