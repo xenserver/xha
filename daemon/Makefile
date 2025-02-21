@@ -1,7 +1,6 @@
 #
 #   daemon/Makefile
 #
-
 TARGET_DIR=daemon
 DEFMAKE=default-debug.mk
 include ../$(DEFMAKE)
@@ -33,7 +32,7 @@ OBJS    +=$(OBJDIR)/hostweight.o
 all: $(TARGET) $(LST)
 
 $(TARGET): $(OBJS) $(HALIBS)
-	$(CC) -o $@ $(LIBS) $(OBJS) $(HALIBS) $(LIBS)
+	$(CC) -o $@ $(OBJS) $(HALIBS) $(LIBS)
 	@chmod 0755 $@
 
 $(LST): $(TARGET)
