@@ -2353,13 +2353,10 @@ wait_until_all_hosts_have_consistent_view(
                     remote_hbdomain_onsf, remote_sfdomain_onhb,
                     removedhost, tmp_hostmap;
 
-#if 1   // TBD - do we need this timeout?
+    // TBD - do we need this timeout?
     MTC_CLOCK       start = _getms();
 
-    while (!consistent && _getms() - start < timeout)
-#else
-    while (!consistent)
-#endif
+    do
     {
         consistent = TRUE;
 
@@ -2417,10 +2414,14 @@ wait_until_all_hosts_have_consistent_view(
 
         if (!consistent)
         {
+            if (_getms() - start >= timeout) {
+                index = -1;
+                break;
+            }
             mssleep(100);
             sm_wait_signals_sm_hb_sf(TRUE, TRUE, TRUE, -1);
         }
-    }
+    } while(!consistent);
 
     com_reader_lock(sm_object, (void **) &psm);
     com_reader_lock(hb_object, (void **) &phb);
