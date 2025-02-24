@@ -86,8 +86,6 @@
 #define XAPI_RESTARTER                      "service"
 #define XAPI_RESTARTER_OPTION1              "xapi"
 #define XAPI_RESTARTER_OPTION2              "restart"
-#define XAPI_LICENSE_CHECKER_PATH           "/opt/xensource/libexec/"
-#define XAPI_LICENSE_CHECKER                "xha-lc"
 
 
 static HA_COMMON_OBJECT_HANDLE xapimon_object = HA_COMMON_OBJECT_INVALID_HANDLE_VALUE;
@@ -750,97 +748,6 @@ restart_xapi()
     }
 
     return pid;
-}
-
-
-//
-//++
-//
-//  NAME:
-//
-//      Xapi_license_check
-//
-//  DESCRIPTION:
-//
-//      This function checks if HA is licensed
-//
-//
-//  FORMAL PARAMETERS:
-//
-//
-//
-//  RETURN VALUE:
-//
-//      0   - HA is licensed
-//      <0  - HA is not licensed
-//
-//
-//  ENVIRONMENT:
-//
-//
-//--
-//
-
-MTC_S32
-Xapi_license_check()
-{
-    pid_t           pid, ret_pid;
-    MTC_CLOCK       time_start_license_check;
-    MTC_S32         status, ret;
-
-    // start license checker
-    if ((pid = fork()) == 0)
-    {
-        //  Close all descriptors.
-        xm_close_descriptors();
-
-        // Reset scheduling policy and priority.
-        main_reset_scheduler();
-
-        execl(XAPI_LICENSE_CHECKER_PATH XAPI_LICENSE_CHECKER,
-              XAPI_LICENSE_CHECKER, (char *) NULL);
-        _exit(-1);
-    }
-
-    if (pid < 0)
-    {
-        log_message(MTC_LOG_WARNING,
-            "Xapimon: cannot fork xapi license checker. (%d)\n", errno);
-        ret = -1;
-    }
-    else
-    {
-        // wait for process termination or timeout
-        time_start_license_check = _getms();
-        // TBD
-        ret_pid = wait_pid_timeout(pid, &status,
-                                   time_start_license_check, _Tlicense * ONE_SEC);
-        if (ret_pid == pid)
-        {
-            switch (status)
-            {
-            case 0:
-                ret = 0;
-                break;
-
-            default:
-                log_message(MTC_LOG_WARNING,
-                            "Xapimon: Xapi license checker failed. (%d)\n", status);
-                ret = -1;
-                break;
-            }
-        }
-        else
-        {
-            // timeout
-            log_message(MTC_LOG_WARNING,
-                        "Xapimon: Xapi license checker (pid=%d) is fung.\n", pid);
-            kill(pid, SIGKILL);
-            ret = -1;
-        }
-    }
-
-    return ret;
 }
 
 
