@@ -253,7 +253,7 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
         return;
     }
 
-    if (priority & MTC_LOG_PRIVATELOG && fpLogfile != NULL && privatelogflag)
+    if (priority & MTC_LOG_PRIVATELOG && privatelogflag)
     {
 #if USE_SEMAPHORE
         sem_wait(semaphore);
@@ -261,34 +261,38 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
         pthread_spin_lock(&lock);
 #endif
 
-        MTC_S32 i = 0;
-
-        while (prioritynames[i].c_val != -1 &&
-               prioritynames[i].c_val != LOG_PRI(priority))
+        if (fpLogfile != NULL)
         {
-            i++;
+
+            MTC_S32 i = 0;
+
+            while (prioritynames[i].c_val != -1 &&
+                   prioritynames[i].c_val != LOG_PRI(priority))
+            {
+                i++;
+            }
+
+            now = time(NULL);
+            ptm = localtime(&now);
+            fprintf(fpLogfile, "%s %02d %02d:%02d:%02d %s %04d [%s] ",
+                    monthnames[ptm->tm_mon], ptm->tm_mday,
+                    ptm->tm_hour, ptm->tm_min, ptm->tm_sec,
+                    ptm->tm_zone, 1900 + ptm->tm_year, prioritynames[i].c_name);
+
+            va_start(ap, fmt);
+            vfprintf(fpLogfile, fmt, ap);
+            va_end(ap);
+
+            fflush(fpLogfile);
+
+            //
+            // Sometime, fsync() takes seconds or more.
+            // It may cause unexpected watchdog timeout.
+            // So we deceided that we do not use fsync().
+            //
+            // fsync(fileno(fpLogfile));
+            //
         }
-      
-        now = time(NULL);
-        ptm = localtime(&now);
-        fprintf(fpLogfile, "%s %02d %02d:%02d:%02d %s %04d [%s] ",
-                monthnames[ptm->tm_mon], ptm->tm_mday,
-                ptm->tm_hour, ptm->tm_min, ptm->tm_sec,
-                ptm->tm_zone, 1900 + ptm->tm_year, prioritynames[i].c_name);
-    
-        va_start(ap, fmt);
-        vfprintf(fpLogfile, fmt, ap);
-        va_end(ap);
-
-        fflush(fpLogfile);
-
-        //
-        // Sometime, fsync() takes seconds or more.
-        // It may cause unexpected watchdog timeout.
-        // So we deceided that we do not use fsync().
-        //
-        // fsync(fileno(fpLogfile));
-        //
 
 #if USE_SEMAPHORE
         sem_post(semaphore);
@@ -331,46 +335,51 @@ void log_bin(MTC_S32 priority, PMTC_S8 data, MTC_S32 size)
         return;
     }
 
-#if USE_SEMAPHORE
-    sem_wait(semaphore);
-#else
-    pthread_spin_lock(&lock);
-#endif
-
-    if (priority & MTC_LOG_PRIVATELOG && fpLogfile != NULL && privatelogflag)
+    if (priority & MTC_LOG_PRIVATELOG && privatelogflag)
     {
-        for (line = 0, pos = 0; pos < size; line++)
-        {
-            fprintf(fpLogfile, "\t%04x: ", line);
-
-            for (col = 0; col < MAX_COL && pos < size; col++, pos++)
-            {
-                fprintf(fpLogfile, "%02x ", (MTC_U8) data[pos]);
-                asc_dmp[col] = (isprint(data[pos]))? data[pos]: '.';
-            }
-            asc_dmp[col] = '\0';
-
-            for (; col < MAX_COL; col++)
-            {
-                fprintf(fpLogfile, "   ");
-            }
-
-            fprintf(fpLogfile, ": %s\n", asc_dmp);
-        }
-        fflush(fpLogfile);
-
-        // 
-        // We don't use fsync(). See comments in log_message().
-        //
-        // fsync(fileno(fpLogfile));
-        // 
-    }
 
 #if USE_SEMAPHORE
-    sem_post(semaphore);
+        sem_wait(semaphore);
 #else
-    pthread_spin_unlock(&lock);
+        pthread_spin_lock(&lock);
 #endif
+
+        if (fpLogfile != NULL)
+        {
+
+            for (line = 0, pos = 0; pos < size; line++)
+            {
+                fprintf(fpLogfile, "\t%04x: ", line);
+
+                for (col = 0; col < MAX_COL && pos < size; col++, pos++)
+                {
+                    fprintf(fpLogfile, "%02x ", (MTC_U8) data[pos]);
+                    asc_dmp[col] = (isprint(data[pos]))? data[pos]: '.';
+                }
+                asc_dmp[col] = '\0';
+
+                for (; col < MAX_COL; col++)
+                {
+                    fprintf(fpLogfile, "   ");
+                }
+
+                fprintf(fpLogfile, ": %s\n", asc_dmp);
+            }
+            fflush(fpLogfile);
+
+            //
+            // We don't use fsync(). See comments in log_message().
+            //
+            // fsync(fileno(fpLogfile));
+            //
+        }
+#if USE_SEMAPHORE
+        sem_post(semaphore);
+#else
+        pthread_spin_unlock(&lock);
+#endif
+
+    }
 }
 
 //
