@@ -299,36 +299,41 @@ void log_bin(MTC_S32 priority, PMTC_S8 data, MTC_S32 size)
         return;
     }
 
-    if (priority & MTC_LOG_PRIVATELOG && fpLogfile != NULL && privatelogflag)
+    if (priority & MTC_LOG_PRIVATELOG && privatelogflag)
     {
         pthread_rwlock_rdlock(&lock);
-        flockfile(fpLogfile);
-        for (line = 0, pos = 0; pos < size; line++)
+
+        if (fpLogfile != NULL)
         {
-            fprintf(fpLogfile, "\t%04x: ", line);
-
-            for (col = 0; col < MAX_COL && pos < size; col++, pos++)
+            flockfile(fpLogfile);
+            for (line = 0, pos = 0; pos < size; line++)
             {
-                fprintf(fpLogfile, "%02x ", (MTC_U8) data[pos]);
-                asc_dmp[col] = (isprint(data[pos]))? data[pos]: '.';
+                fprintf(fpLogfile, "\t%04x: ", line);
+    
+                for (col = 0; col < MAX_COL && pos < size; col++, pos++)
+                {
+                    fprintf(fpLogfile, "%02x ", (MTC_U8) data[pos]);
+                    asc_dmp[col] = (isprint(data[pos]))? data[pos]: '.';
+                }
+                asc_dmp[col] = '\0';
+    
+                for (; col < MAX_COL; col++)
+                {
+                    fprintf(fpLogfile, "   ");
+                }
+    
+                fprintf(fpLogfile, ": %s\n", asc_dmp);
             }
-            asc_dmp[col] = '\0';
-
-            for (; col < MAX_COL; col++)
-            {
-                fprintf(fpLogfile, "   ");
-            }
-
-            fprintf(fpLogfile, ": %s\n", asc_dmp);
+            funlockfile(fpLogfile);
+            fflush(fpLogfile);
+    
+            // 
+            // We don't use fsync(). See comments in log_message().
+            //
+            // fsync(fileno(fpLogfile));
+            // 
         }
-        funlockfile(fpLogfile);
-        fflush(fpLogfile);
 
-        // 
-        // We don't use fsync(). See comments in log_message().
-        //
-        // fsync(fileno(fpLogfile));
-        // 
         pthread_rwlock_unlock(&lock);
     }
 }
