@@ -71,6 +71,12 @@ static FILE                 *fpLogfile = NULL;
 static MTC_BOOLEAN          initialized = FALSE;
 
 
+/*
+ * lock exists to protect fpLogfile
+ * Readers should hold the lock when access fpLogfile and the FILE it points to
+ * Writers should hold the lock when assigning fpLogfile or when freeing the
+ *  object it points to
+ */
 static pthread_rwlock_t     lock;
 
 
@@ -522,7 +528,7 @@ log_fsync()
         return;
     }
 
-    pthread_rwlock_wrlock(&lock);
+    pthread_rwlock_rdlock(&lock);
     if (fpLogfile)
     {
         fsync(fileno(fpLogfile));
