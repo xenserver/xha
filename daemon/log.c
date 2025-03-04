@@ -127,7 +127,7 @@ MTC_S32 log_initialize()
 //  This function should be called from ha_log_reopen script
 //  when log files is rotated.
 //
-//  Smaple logrotate config file </etc/logrotate.d/xha>
+//  Sample logrotate config file </etc/logrotate.d/xha>
 //    /var/log/xha.log {
 //          rotate 5
 //          size 100k
@@ -140,8 +140,6 @@ MTC_S32 log_initialize()
 //  paramaters
 //
 //  return value
-//    0: success
-//    not 0: fail
 //
 
 void log_reopen()
