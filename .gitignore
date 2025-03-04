@@ -5,3 +5,6 @@ include/mtcerrno.h
 scripts/generr
 scripts/generr.o
 scripts/ha_errnorc
+stubs/cfread
+*.o
+*.a
