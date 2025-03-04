@@ -43,8 +43,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -57,8 +57,6 @@
 #define SYSLOG_NAMES
 #include "log.h"
 
-
-#define USE_SEMAPHORE   0
 
 
 #define MTC_LOG_FILE_NAME       "/var/log/xha.log"
@@ -73,12 +71,7 @@ static FILE                 *fpLogfile = NULL;
 static MTC_BOOLEAN          initialized = FALSE;
 
 
-#if USE_SEMAPHORE
-#define MTC_LOG_SEMAPHORE_NAME  "/xha_log_semaphore"
-sem_t                       *semaphore = SEM_FAILED;
-#else
-static pthread_spinlock_t   lock;
-#endif
+static pthread_rwlock_t     lock;
 
 
 PMTC_S8 monthnames[] = {
@@ -115,17 +108,10 @@ MTC_S32 log_initialize()
         syslog(LOG_WARNING, "can't open local log file. (sys %d)", errno);
     }
 
-#if USE_SEMAPHORE
-    semaphore = sem_open(MTC_LOG_SEMAPHORE_NAME, O_CREAT, S_IRUSR | S_IWUSR, 1);
-    if (semaphore == SEM_FAILED)
-    {
-        syslog(LOG_ERR, "can't open semaphore %s. (sys %d)", MTC_LOG_SEMAPHORE_NAME, errno);
-#else
-    ret = pthread_spin_init(&lock, PTHREAD_PROCESS_PRIVATE);
+    ret = pthread_rwlock_init(&lock, PTHREAD_PROCESS_PRIVATE);
     if (ret)
     {
-        syslog(LOG_ERR, "can't initialize spin lock. (sys %d)", ret);
-#endif
+        syslog(LOG_ERR, "can't initialize rwlock. (sys %d)", ret);
         return MTC_ERROR_LOG_PTHREAD;
     }
 
@@ -160,11 +146,7 @@ MTC_S32 log_initialize()
 
 void log_reopen()
 {
-#if USE_SEMAPHORE
-    sem_wait(semaphore);
-#else
-    pthread_spin_lock(&lock);
-#endif
+    pthread_rwlock_wrlock(&lock);
 
     if (fpLogfile)
     {
@@ -177,11 +159,7 @@ void log_reopen()
         syslog(LOG_WARNING, "can't open local log file. (sys %d)", errno);
     }
 
-#if USE_SEMAPHORE
-    sem_post(semaphore);
-#else
-    pthread_spin_unlock(&lock);
-#endif
+    pthread_rwlock_unlock(&lock);
 }
 
 
@@ -199,11 +177,7 @@ void log_terminate()
 {
     initialized = FALSE;
 
-#if USE_SEMAPHORE
-    sem_wait(semaphore);
-#else
-    pthread_spin_lock(&lock);
-#endif
+    pthread_rwlock_wrlock(&lock);
 
     if (fpLogfile)
     {
@@ -213,14 +187,8 @@ void log_terminate()
 
     closelog();
 
-#if USE_SEMAPHORE
-    sem_post(semaphore);
-    sem_close(semaphore);
-    sem_unlink(MTC_LOG_SEMAPHORE_NAME);
-#else
-    pthread_spin_unlock(&lock);
-    pthread_spin_destroy(&lock);
-#endif
+    pthread_rwlock_unlock(&lock);
+    pthread_rwlock_destroy(&lock);
 }
 
 
@@ -253,11 +221,7 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
         return;
     }
 
-#if USE_SEMAPHORE
-    sem_wait(semaphore);
-#else
-    pthread_spin_lock(&lock);
-#endif
+    pthread_rwlock_rdlock(&lock);
 
     if (priority & MTC_LOG_PRIVATELOG && fpLogfile != NULL && privatelogflag)
     {
@@ -271,6 +235,7 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
       
         now = time(NULL);
         ptm = localtime(&now);
+        flockfile(fpLogfile);
         fprintf(fpLogfile, "%s %02d %02d:%02d:%02d %s %04d [%s] ",
                 monthnames[ptm->tm_mon], ptm->tm_mday,
                 ptm->tm_hour, ptm->tm_min, ptm->tm_sec,
@@ -278,6 +243,7 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
     
         va_start(ap, fmt);
         vfprintf(fpLogfile, fmt, ap);
+        funlockfile(fpLogfile);
         va_end(ap);
 
         fflush(fpLogfile);
@@ -299,11 +265,7 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
         va_end(ap);
     }
 
-#if USE_SEMAPHORE
-    sem_post(semaphore);
-#else
-    pthread_spin_unlock(&lock);
-#endif
+    pthread_rwlock_unlock(&lock);
 }
 
 
@@ -332,14 +294,11 @@ void log_bin(MTC_S32 priority, PMTC_S8 data, MTC_S32 size)
         return;
     }
 
-#if USE_SEMAPHORE
-    sem_wait(semaphore);
-#else
-    pthread_spin_lock(&lock);
-#endif
+    pthread_rwlock_rdlock(&lock);
 
     if (priority & MTC_LOG_PRIVATELOG && fpLogfile != NULL && privatelogflag)
     {
+        flockfile(fpLogfile);
         for (line = 0, pos = 0; pos < size; line++)
         {
             fprintf(fpLogfile, "\t%04x: ", line);
@@ -358,6 +317,7 @@ void log_bin(MTC_S32 priority, PMTC_S8 data, MTC_S32 size)
 
             fprintf(fpLogfile, ": %s\n", asc_dmp);
         }
+        funlockfile(fpLogfile);
         fflush(fpLogfile);
 
         // 
@@ -367,11 +327,7 @@ void log_bin(MTC_S32 priority, PMTC_S8 data, MTC_S32 size)
         // 
     }
 
-#if USE_SEMAPHORE
-    sem_post(semaphore);
-#else
-    pthread_spin_unlock(&lock);
-#endif
+    pthread_rwlock_unlock(&lock);
 }
 
 //
@@ -572,18 +528,10 @@ log_fsync()
         return;
     }
 
-#if USE_SEMAPHORE
-    sem_wait(semaphore);
-#else
-    pthread_spin_lock(&lock);
-#endif
+    pthread_rwlock_wrlock(&lock);
     if (fpLogfile)
     {
         fsync(fileno(fpLogfile));
     }
-#if USE_SEMAPHORE
-    sem_post(semaphore);
-#else
-    pthread_spin_unlock(&lock);
-#endif
+    pthread_rwlock_unlock(&lock);
 }
