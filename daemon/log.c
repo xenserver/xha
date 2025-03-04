@@ -225,40 +225,43 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
         return;
     }
 
-    if (priority & MTC_LOG_PRIVATELOG && fpLogfile != NULL && privatelogflag)
+    if (priority & MTC_LOG_PRIVATELOG && privatelogflag)
     {
         pthread_rwlock_rdlock(&lock);
 
-        MTC_S32 i = 0;
-
-        while (prioritynames[i].c_val != -1 &&
-               prioritynames[i].c_val != LOG_PRI(priority))
+        if (fpLogfile != NULL)
         {
-            i++;
-        }
+            MTC_S32 i = 0;
+
+            while (prioritynames[i].c_val != -1 &&
+                   prioritynames[i].c_val != LOG_PRI(priority))
+            {
+                i++;
+            }
       
-        now = time(NULL);
-        ptm = localtime(&now);
-        flockfile(fpLogfile);
-        fprintf(fpLogfile, "%s %02d %02d:%02d:%02d %s %04d [%s] ",
-                monthnames[ptm->tm_mon], ptm->tm_mday,
-                ptm->tm_hour, ptm->tm_min, ptm->tm_sec,
-                ptm->tm_zone, 1900 + ptm->tm_year, prioritynames[i].c_name);
+            now = time(NULL);
+            ptm = localtime(&now);
+            flockfile(fpLogfile);
+            fprintf(fpLogfile, "%s %02d %02d:%02d:%02d %s %04d [%s] ",
+                    monthnames[ptm->tm_mon], ptm->tm_mday,
+                    ptm->tm_hour, ptm->tm_min, ptm->tm_sec,
+                    ptm->tm_zone, 1900 + ptm->tm_year, prioritynames[i].c_name);
     
-        va_start(ap, fmt);
-        vfprintf(fpLogfile, fmt, ap);
-        funlockfile(fpLogfile);
-        va_end(ap);
+            va_start(ap, fmt);
+            vfprintf(fpLogfile, fmt, ap);
+            funlockfile(fpLogfile);
+            va_end(ap);
 
-        fflush(fpLogfile);
+            fflush(fpLogfile);
 
-        //
-        // Sometime, fsync() takes seconds or more.
-        // It may cause unexpected watchdog timeout.
-        // So we deceided that we do not use fsync().
-        //
-        // fsync(fileno(fpLogfile));
-        //
+            //
+            // Sometime, fsync() takes seconds or more.
+            // It may cause unexpected watchdog timeout.
+            // So we deceided that we do not use fsync().
+            //
+            // fsync(fileno(fpLogfile));
+            //
+        }
 
         pthread_rwlock_unlock(&lock);
     }
