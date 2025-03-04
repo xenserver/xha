@@ -219,10 +219,10 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
         return;
     }
 
-    pthread_rwlock_rdlock(&lock);
-
     if (priority & MTC_LOG_PRIVATELOG && fpLogfile != NULL && privatelogflag)
     {
+        pthread_rwlock_rdlock(&lock);
+
         MTC_S32 i = 0;
 
         while (prioritynames[i].c_val != -1 &&
@@ -254,7 +254,7 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
         // fsync(fileno(fpLogfile));
         //
 
-
+        pthread_rwlock_unlock(&lock);
     }
     if ((logmask & MTC_LOG_MASK_SYSLOG) || (priority & MTC_LOG_SYSLOG))
     {
@@ -262,8 +262,6 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
         vsyslog(LOG_PRI(priority), fmt, ap);
         va_end(ap);
     }
-
-    pthread_rwlock_unlock(&lock);
 }
 
 
@@ -292,10 +290,9 @@ void log_bin(MTC_S32 priority, PMTC_S8 data, MTC_S32 size)
         return;
     }
 
-    pthread_rwlock_rdlock(&lock);
-
     if (priority & MTC_LOG_PRIVATELOG && fpLogfile != NULL && privatelogflag)
     {
+        pthread_rwlock_rdlock(&lock);
         flockfile(fpLogfile);
         for (line = 0, pos = 0; pos < size; line++)
         {
@@ -323,9 +320,8 @@ void log_bin(MTC_S32 priority, PMTC_S8 data, MTC_S32 size)
         //
         // fsync(fileno(fpLogfile));
         // 
+        pthread_rwlock_unlock(&lock);
     }
-
-    pthread_rwlock_unlock(&lock);
 }
 
 //
