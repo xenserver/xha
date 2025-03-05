@@ -47,6 +47,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <inttypes.h>
 
 
 //
@@ -437,7 +438,7 @@ xapimon(
         if (target_delay != 0)
         {
             log_message(MTC_LOG_DEBUG,
-                        "XM(FIST): xapi healthcheck delay is %d ms\n", target_delay);
+                        "XM(FIST): xapi healthcheck delay is %"PRId64" ms\n", target_delay);
             xm_sleep(target_delay - (_getms() - start));
         }
 

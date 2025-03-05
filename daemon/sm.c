@@ -42,6 +42,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 
 
@@ -322,7 +323,8 @@ MTC_STATIC void
 print_liveset(
     MTC_S32     pri,
     PMTC_S8     log_string,
-    MTC_HOSTMAP hostmap);
+    MTC_HOSTMAP hostmap)
+__attribute__((format(printf, 2, 0)));
 
 MTC_STATIC void
 wait_until_HBSF_state_stable();
@@ -2291,7 +2293,7 @@ wait_until_HBSF_state_stable()
                 {
                     log_maskable_debug_message(FH_TRACE,
                         "FH: waiting for HB from host (%d),"
-                        " time since last HB receive = %d.\n",
+                        " time since last HB receive = %"PRId64".\n",
                         index, now - phb->time_last_HB[index]);
                     logged_hb[index] = TRUE;
                 }
@@ -2306,7 +2308,7 @@ wait_until_HBSF_state_stable()
                 {
                     log_maskable_debug_message(FH_TRACE,
                         "FH: waiting for SF from host (%d),"
-                        " time since last SF update = %d.\n",
+                        " time since last SF update = %"PRId64".\n",
                         index,
                         now - psf->time_last_SF[index]);
                     logged_sf[index] = TRUE;
@@ -2545,7 +2547,7 @@ wait_until_all_hosts_have_consistent_view(
             MTC_HOSTMAP_SET(removedhost, selected);
         }
 
-        log_message(MTC_LOG_WARNING, "after merger:\n", index);
+        log_message(MTC_LOG_WARNING, "after merger: %d\n", index);
         for (index = 0; _is_configured_host(index); index++)
         {
             MTC_HOSTMAP_INTERSECTION(phb->raw[index].hbdomain, '=',
