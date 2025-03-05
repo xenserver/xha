@@ -209,7 +209,6 @@ main(
     int lockfiled, fd, sig, init_index;
     MTC_S32 phase;
     struct rlimit rlimit;
-    MTC_BOOLEAN licensed = TRUE;
     MTC_STATUS status;
     char buf[32];
     int index;
@@ -268,14 +267,6 @@ main(
         main_exit(status);
     }
 
-    //  #### See if XenServer HA is properly licensed.
-
-    if (Xapi_license_check() < 0)
-    {
-        //  Log subsystem is not opened yet
-        licensed = FALSE;
-    }
-
     //  #### Close all inherited file descriptors.
 
     getrlimit(RLIMIT_NOFILE, &rlimit);
@@ -306,18 +297,6 @@ main(
         fist_enable(argv[index]) == MTC_SUCCESS
             ? log_message(MTC_LOG_DEBUG, "Accepted an initial FIST point %s.\n", argv[index])
             : log_message(MTC_LOG_DEBUG, "FIST point %s is not valid.\n", argv[index]);
-    }
-
-    if (fist_on("init.license.fail"))
-    {
-        licensed = FALSE;
-    }
-
-    if (licensed == FALSE)
-    {
-        log_status(MTC_ERROR_IMPROPER_LICENSE, NULL);
-        log_terminate();
-        main_exit(MTC_ERROR_IMPROPER_LICENSE);
     }
 
     //  #### Detach this process from the current process group,
