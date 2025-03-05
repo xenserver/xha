@@ -365,7 +365,7 @@ sm_initialize(
     MTC_S32 phase);
 
 extern void
-self_fence();
+self_fence(MTC_STATUS code, PMTC_S8 message);
 
 extern MTC_BOOLEAN
 sm_get_join_block();

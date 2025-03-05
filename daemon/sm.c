@@ -811,16 +811,13 @@ sm(
 }
 
 
-MTC_STATIC void
-rendezvous(
-    SM_PHASE    phase1,
-    SM_PHASE    phase2,
-    SM_PHASE    phase3,
-    MTC_BOOLEAN on_heartbeat,
-    MTC_BOOLEAN on_statefile)
-{
 #if RENDEZVOUS_FAULT_HANDLING
-    void rendezvous_wait(SM_PHASE p1, SM_PHASE p2)
+MTC_STATIC void
+rendezvous_wait(
+     SM_PHASE p1,
+     SM_PHASE p2,
+     MTC_BOOLEAN on_heartbeat,
+     MTC_BOOLEAN on_statefile)
     {
         PCOM_DATA_SM    psm;
         PCOM_DATA_HB    phb;
@@ -901,12 +898,22 @@ rendezvous(
             hb_SF_cancel_accelerate();
         }
     }
+#endif
 
+MTC_STATIC void
+rendezvous(
+    SM_PHASE    phase1,
+    SM_PHASE    phase2,
+    SM_PHASE    phase3,
+    MTC_BOOLEAN on_heartbeat,
+    MTC_BOOLEAN on_statefile)
+{
+#if RENDEZVOUS_FAULT_HANDLING
     set_sm_phase(phase1);
-    rendezvous_wait(phase1, phase2);
+    rendezvous_wait(phase1, phase2, on_heartbeat, on_statefile);
 
     set_sm_phase(phase2);
-    rendezvous_wait(phase2, phase3);
+    rendezvous_wait(phase2, phase3, on_heartbeat, on_statefile);
 #else
     set_sm_phase(phase2);
 #endif
@@ -1867,15 +1874,11 @@ check_pool_state()
 
 
 MTC_STATIC MTC_BOOLEAN
-update_sfdomain()
-{
-    MTC_CLOCK       now;
-    MTC_S8          hostmap[MAX_HOST_NUM + 1] = {0};
-    MTC_BOOLEAN     changed = FALSE;
-
-    MTC_BOOLEAN update_sfdomain_sub(
+update_sfdomain_sub(
+        MTC_CLOCK now,
+        MTC_S8 hostmap[MAX_HOST_NUM + 1],
         MTC_BOOLEAN writable)
-    {
+{
         PCOM_DATA_SF    psf;
         MTC_BOOLEAN changed = FALSE;
         MTC_S32     index;
@@ -1964,14 +1967,21 @@ update_sfdomain()
         }
 
         return changed;
-    }
+}
+
+MTC_STATIC MTC_BOOLEAN
+update_sfdomain()
+{
+    MTC_CLOCK       now;
+    MTC_S8          hostmap[MAX_HOST_NUM + 1] = {0};
+    MTC_BOOLEAN     changed = FALSE;
 
     now = _getms();
 
-    changed = update_sfdomain_sub(FALSE);
+    changed = update_sfdomain_sub(now, hostmap, FALSE);
     if (changed)
     {
-        changed = update_sfdomain_sub(TRUE);
+        changed = update_sfdomain_sub(now, hostmap, TRUE);
         if (changed)
         {
             log_message(MTC_LOG_DEBUG,
@@ -2353,13 +2363,10 @@ wait_until_all_hosts_have_consistent_view(
                     remote_hbdomain_onsf, remote_sfdomain_onhb,
                     removedhost, tmp_hostmap;
 
-#if 1   // TBD - do we need this timeout?
+    // TBD - do we need this timeout?
     MTC_CLOCK       start = _getms();
 
-    while (!consistent && _getms() - start < timeout)
-#else
-    while (!consistent)
-#endif
+    do
     {
         consistent = TRUE;
 
@@ -2417,10 +2424,14 @@ wait_until_all_hosts_have_consistent_view(
 
         if (!consistent)
         {
+            if (_getms() - start >= timeout) {
+                index = -1;
+                break;
+            }
             mssleep(100);
             sm_wait_signals_sm_hb_sf(TRUE, TRUE, TRUE, -1);
         }
-    }
+    } while(!consistent);
 
     com_reader_lock(sm_object, (void **) &psm);
     com_reader_lock(hb_object, (void **) &phb);
@@ -2781,18 +2792,12 @@ sm_send_signals_sm_hb_sf(
 }
 
 
-MTC_STATIC MTC_BOOLEAN
-sm_wait_signals_sm_hb_sf(
+static MTC_BOOLEAN
+check_sigs(
     MTC_BOOLEAN sm_sig,
     MTC_BOOLEAN hb_sig,
-    MTC_BOOLEAN sf_sig,
-    MTC_CLOCK   timeout)
+    MTC_BOOLEAN sf_sig)
 {
-    MTC_BOOLEAN signaled;
-    MTC_CLOCK   start = _getms();
-
-    MTC_BOOLEAN check_sigs()
-    {
         MTC_BOOLEAN signaled = FALSE;
 
         if (sm_sig && smvar.sm_sig)
@@ -2812,7 +2817,17 @@ sm_wait_signals_sm_hb_sf(
         }
 
         return signaled;
-    }
+}
+
+MTC_STATIC MTC_BOOLEAN
+sm_wait_signals_sm_hb_sf(
+    MTC_BOOLEAN sm_sig,
+    MTC_BOOLEAN hb_sig,
+    MTC_BOOLEAN sf_sig,
+    MTC_CLOCK   timeout)
+{
+    MTC_BOOLEAN signaled;
+    MTC_CLOCK   start = _getms();
 
     if (timeout == 0)
     {
@@ -2820,7 +2835,7 @@ sm_wait_signals_sm_hb_sf(
     }
 
     pthread_mutex_lock(&smvar.mutex);
-    while (!(signaled = check_sigs()) &&
+    while (!(signaled = check_sigs(sm_sig, hb_sig, sf_sig)) &&
            ((timeout < 0)? TRUE: (_getms() - start < timeout)))
     {
         if (timeout < 0)

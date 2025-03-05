@@ -322,7 +322,6 @@ script_service_thread(
         memset((void *)&response, 0, sizeof(response));
 
         FD_ZERO(&fds);
-        nfds = 0;
 
         FD_SET(listening_socket, &fds);
         nfds = listening_socket;

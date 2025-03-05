@@ -775,7 +775,6 @@ wait_pid_timeout(
     while ((ret_pid = waitpid(pid, pstat, WNOHANG)) == 0 &&
            now < start_time + timeout)
     {
-        ret_pid = 0;
         nanosleep(&sleep_ts, &sleep_rem);
         now = _getms();
     }
