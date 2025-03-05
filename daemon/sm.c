@@ -715,6 +715,7 @@ sm(
     MTC_STATUS  status;
     MTC_U32     weight;
 
+    log_thread_id("SM");
     // commit initial weight
     weight = commit_weight();
     log_message(MTC_LOG_INFO, "Initial weight = %d.\n", weight);
@@ -1654,6 +1655,7 @@ MTC_STATIC void *
 sm_worker(
     void *ignore)
 {
+    log_thread_id("SM_Worker");
     while (!smvar.terminate)
     {
         mssleep(SM_WORKER_INTERVAL);

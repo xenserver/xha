@@ -305,6 +305,7 @@ script_service_thread(
     service_func_num = ((SCRIPT_SERVICE_THREAD_PARAM *) param)->funcnum;
     service_func = ((SCRIPT_SERVICE_THREAD_PARAM *) param)->func;
 
+    log_thread_id("SC");
     do
     {
         fd_set fds;

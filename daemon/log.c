@@ -50,6 +50,7 @@
 #include <sys/stat.h>
 #include <dlfcn.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 
 
 #include "mtctypes.h"
@@ -537,9 +538,35 @@ log_fsync()
     }
 
     pthread_rwlock_rdlock(&lock);
+
     if (fpLogfile)
     {
         fsync(fileno(fpLogfile));
     }
     pthread_rwlock_unlock(&lock);
+}
+
+//
+//
+//  NAME:
+//
+//      log_thread_id
+//
+//  DESCRIPTION:
+//
+//      Log thread ID.
+//
+//  paramaters
+//
+//      Thread name.
+//
+//  return value
+//
+//      none
+//
+void
+log_thread_id(
+    char *thread_name)
+{
+    log_message(MTC_LOG_INFO, "%s: Thread ID = %ld\n", thread_name, syscall(SYS_gettid));
 }

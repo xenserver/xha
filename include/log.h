@@ -317,5 +317,27 @@ log_status(
 extern void
 log_fsync();
 
+//
+//
+//  NAME:
+//
+//      log_thread_id
+//
+//  DESCRIPTION:
+//
+//      Log thread ID.
+//
+//  paramaters
+//
+//      Thread name.
+//
+//  return value
+//
+//      none
+//
+extern void
+log_thread_id(
+    char *thread_name);
+
 #endif	// LOG_H
 

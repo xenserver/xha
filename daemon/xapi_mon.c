@@ -298,6 +298,7 @@ xapimon(
     PMTC_S8             perr_string = err_string;
     MTC_STATUS          status;
 
+    log_thread_id("Xapimon");
     while (!terminate)
     {
         log_maskable_debug_message(TRACE, "Xapimon: Xapi monitor thread activity log.\n");

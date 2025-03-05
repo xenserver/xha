@@ -131,6 +131,13 @@ hb_sm_updated(
 
 #define HB_SIG          'hahx'
 
+#define mssleep(X) \
+{ \
+    struct timespec sleep_ts = mstots(X), ts_rem; \
+    ts_rem = sleep_ts; \
+    while (nanosleep(&sleep_ts, &ts_rem)) sleep_ts = ts_rem; \
+}
+
 typedef struct _HB_PACKET {
     MTC_U32     signature;                                  // 4 bytes
     MTC_U32     checksum;                                   // 4 bytes
@@ -228,7 +235,11 @@ MTC_STATIC  void
 hb_cleanup_objects();
 
 MTC_STATIC  void *
-hb(
+hb_send(
+    void *ignore);
+
+MTC_STATIC  void *
+hb_receive(
     void *ignore);
 
 MTC_STATIC  MTC_BOOLEAN
@@ -289,7 +300,8 @@ MTC_S32
 hb_initialize(
     MTC_S32  phase)
 {
-    static pthread_t    hb_thread = 0;
+    static pthread_t    hb_receive_thread = 0;
+    static pthread_t    hb_send_thread = 0;
     MTC_S32             ret = MTC_SUCCESS;
 
     assert(-1 <= phase && phase <= 1);
@@ -321,9 +333,18 @@ hb_initialize(
             goto error;
         }
 
-        // start heartbeat thread
         hbvar.terminate = FALSE;
-        ret = pthread_create(&hb_thread, xhad_pthread_attr, hb, NULL);
+
+        // start heartbeat receiving thread
+        ret = pthread_create(&hb_receive_thread, xhad_pthread_attr, hb_receive, NULL);
+        if (ret)
+        {
+            ret = MTC_ERROR_HB_PTHREAD;
+            goto error;
+        }
+
+        // start heartbeat sending thread
+        ret = pthread_create(&hb_send_thread, xhad_pthread_attr, hb_send, NULL);
         if (ret)
         {
             ret = MTC_ERROR_HB_PTHREAD;
@@ -338,19 +359,26 @@ hb_initialize(
     default:
         log_message(MTC_LOG_INFO, "HB: hb_initialize(-1).\n");
 
-        if (hb_thread)
-        {
-#if 0
-            hb_spin_lock();
-            hbvar.terminate = TRUE;
-            hb_spin_unlock();
+        hb_spin_lock();
+        hbvar.terminate = TRUE;
+        hb_spin_unlock();
 
-            // wait for thread termination
-            if ((ret = pthread_join(hb_thread, NULL)))
+        if (hb_receive_thread)
+        {
+            // wait for receive thread termination
+            if ((ret = pthread_join(hb_receive_thread, NULL)))
             {
-                pthread_kill(hb_thread, SIGKILL);
+                pthread_kill(hb_receive_thread, SIGKILL);
             }
-#endif
+        }
+
+        if (hb_send_thread)
+        {
+            // wait for send thread termination
+            if ((ret = pthread_join(hb_send_thread, NULL)))
+            {
+                pthread_kill(hb_send_thread, SIGKILL);
+            }
         }
 
         if (hbvar.watchdog != INVALID_WATCHDOG_HANDLE_VALUE)
@@ -732,11 +760,11 @@ hb_sm_updated(
 //
 //  NAME:
 //
-//      hb
+//      hb_receive
 //
 //  DESCRIPTION:
 //
-//      The heartbeat main thread.
+//      The heartbeat receiving thread.
 //
 //  FORMAL PARAMETERS:
 //
@@ -749,17 +777,16 @@ hb_sm_updated(
 //
 
 MTC_STATIC  void *
-hb(
+hb_receive(
     void *ignore)
 {
     MTC_BOOLEAN         term = FALSE;
     MTC_CLOCK           last, now;
 
+    log_thread_id("HB_receive");
     now = last = _getms();
     do
     {
-        log_maskable_debug_message(TRACE, "HB: heartbeat thread activity log.\n");
-
         if (update_hbdomain())
         {
             start_fh(FALSE);
@@ -775,25 +802,72 @@ hb(
             FD_SET(hbvar.socket, &fds);
             nfds = _max(nfds, hbvar.socket);
 
-            wait = mstotv((_t1 * ONE_SEC - (now - last) < 0)? 0: _t1 * ONE_SEC - (now - last));
+            wait = mstotv(_max(_t1 * ONE_SEC - (now - last), 0));
             if (select(nfds + 1, &fds, NULL, NULL, &wait) > 0)
             {
                 receive_hb();
             }
         }
 
-        // time to send haertbeat?
+        // time to next cycle
         now = _getms();
         if (now - last < _t1 * ONE_SEC)
         {
             // no, still have to wait.
             continue;
-            // note: the variable 'now' is used in next cycle
         }
-        // yes, it's time to send heartbeat
 
+        last = now;
+
+        hb_spin_lock();
+        //  Refresh watchdog counter to Wh
+        if (hbvar.watchdog != INVALID_WATCHDOG_HANDLE_VALUE)
+        {
+            watchdog_set(hbvar.watchdog, _Wh);
+        }
+        term = hbvar.terminate;
+        hb_spin_unlock();
+
+        // note: the variable 'now' is used in next cycle
+    } while (!term);
+
+    return NULL;
+}
+
+
+//
+//  NAME:
+//
+//      hb_send
+//
+//  DESCRIPTION:
+//
+//      The heartbeat sending thread.
+//
+//  FORMAL PARAMETERS:
+//
+//          
+//  RETURN VALUE:
+//
+//
+//  ENVIRONMENT:
+//
+//
+
+MTC_STATIC  void *
+hb_send(
+    void *ignore)
+{
+    MTC_BOOLEAN         term = FALSE;
+    MTC_CLOCK           last, now;
+
+    log_thread_id("HB_send");
+    do
+    {
         // check fist
         hb_check_fist_sticky();
+
+        last = _getms();
 
         // send heartbeat
         send_hb();
@@ -814,18 +888,12 @@ hb(
             com_writer_unlock(hb_object);
         }
 
-        last = now;
+        mssleep(_max(_t1 * ONE_SEC - (now - last), 0));
 
         hb_spin_lock();
-        //  Refresh watchdog counter to Wh
-        if (hbvar.watchdog != INVALID_WATCHDOG_HANDLE_VALUE)
-        {
-            watchdog_set(hbvar.watchdog, _Wh);
-        }
         term = hbvar.terminate;
         hb_spin_unlock();
 
-        // note: the variable 'now' is used in next cycle
     } while (!term);
 
     return NULL;
