@@ -1302,7 +1302,7 @@ receive_hb()
     }
 
 
-    // sf accelarete
+    // sf accelerate
     if (pkt.SF_accelerate)
     {
         sf_accelerate();
