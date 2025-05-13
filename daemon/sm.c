@@ -941,7 +941,7 @@ fault_handler()
     log_maskable_debug_message(FH_TRACE, "FH: HB/SF state has become stable.\n");
 
     weight = commit_weight();
-    log_maskable_debug_message(FH_TRACE, "FH: weight value [%d] is commited.\n", weight);
+    log_maskable_debug_message(FH_TRACE, "FH: weight value [%d] is committed.\n", weight);
 
     // phase 2: Wait until all hosts have consistent view
     rendezvous(SM_PHASE_FH1DONE, SM_PHASE_FH2, SM_PHASE_FH2DONE, TRUE, TRUE);
@@ -2445,7 +2445,7 @@ wait_until_all_hosts_have_consistent_view(
 
     if (!consistent)
     {
-        log_message(MTC_LOG_WARNING, "Host (%d) and the local host do not agre on the view to the pool membership.\n", index);
+        log_message(MTC_LOG_WARNING, "Host (%d) and the local host do not agree on the view to the pool membership.\n", index);
         print_liveset(MTC_LOG_WARNING, "\tlocal HB domain = (%s)\n", my_hbdomain);
         print_liveset(MTC_LOG_WARNING, "\tlocal SF domain = (%s)\n", my_sfdomain);
         print_liveset(MTC_LOG_WARNING, "\tremote HB domain = (%s)\n", remote_hbdomain);
