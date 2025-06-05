@@ -881,7 +881,12 @@ hb_send(
 
             com_writer_lock(hb_object, (void **) &phb);
             phb->time_last_HB[_my_index] = now;
-            phb->latency = now - last;
+
+            // Calculate heartbeat latency:
+            // 1. If sending the heartbeat exceeds the configured interval, set
+            //    latency to the actual elapsed time.
+            // 2. Otherwise, set latency to the configured heartbeat interval.
+            phb->latency = _max(now - last - _t1 * ONE_SEC, _t1 * ONE_SEC);
             phb->latency_max = (phb->latency_max < 0)? phb->latency:
                                 _max(phb->latency_max, phb->latency);
             phb->latency_min = (phb->latency_min < 0)? phb->latency:
