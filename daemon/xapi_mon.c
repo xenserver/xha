@@ -83,10 +83,10 @@
 #define XAPIMON_WAITCHLD_POLLING_DIVIDER    (10)
 #define XAPI_HEALTHCHECKER_PATH             "/opt/xensource/libexec/"
 #define XAPI_HEALTHCHECKER                  "xapi-health-check"
-#define XAPI_RESTARTER_PATH                 "/sbin/"
-#define XAPI_RESTARTER                      "service"
-#define XAPI_RESTARTER_OPTION1              "xapi"
-#define XAPI_RESTARTER_OPTION2              "restart"
+#define XAPI_RESTARTER_PATH                 "/usr/bin/"
+#define XAPI_RESTARTER                      "systemctl"
+#define XAPI_RESTARTER_OPTION1              "restart"
+#define XAPI_RESTARTER_OPTION2              "xapi.service"
 
 
 static HA_COMMON_OBJECT_HANDLE xapimon_object = HA_COMMON_OBJECT_INVALID_HANDLE_VALUE;
