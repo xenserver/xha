@@ -2,63 +2,37 @@
 #   Top-level Makefile
 #
 #   This makefile installs the debug version (compiled without NDEBUG).
-#   To install release version, do "make release-install" or
-#   modify this makefile to do release install by default. See #here below. 
 #
 
-.PHONY: build clean debug release
+.PHONY: build clean debug
 
-all: debug release
+all: debug
 
 debug:
 	@mkdir -p debug
-	@cd include;  make DEFMAKE=default-debug.mk
-	@cd lib;      make DEFMAKE=default-debug.mk
-	@cd daemon;   make DEFMAKE=default-debug.mk
-	@cd commands; make DEFMAKE=default-debug.mk
-	@cd scripts;  make DEFMAKE=default-debug.mk
+	$(MAKE) -C include DEFMAKE=default-debug.mk
+	$(MAKE) -C lib DEFMAKE=default-debug.mk
+	$(MAKE) -C daemon DEFMAKE=default-debug.mk
+	$(MAKE) -C commands DEFMAKE=default-debug.mk
+	$(MAKE) -C scripts DEFMAKE=default-debug.mk
 	
-release:
-	@mkdir -p release
-	@cd include;  make DEFMAKE=default-release.mk
-	@cd lib;      make DEFMAKE=default-release.mk
-	@cd daemon;   make DEFMAKE=default-release.mk
-	@cd commands; make DEFMAKE=default-release.mk
-	@cd scripts;  make DEFMAKE=default-release.mk
-
-clean: debug-clean release-clean
+clean: debug-clean
 
 debug-clean:
-	@cd include;  make clean DEFMAKE=default-debug.mk
-	@cd lib;      make clean DEFMAKE=default-debug.mk
-	@cd daemon;   make clean DEFMAKE=default-debug.mk
-	@cd commands; make clean DEFMAKE=default-debug.mk
-	@cd scripts;  make clean DEFMAKE=default-debug.mk
+	$(MAKE) -C include clean DEFMAKE=default-debug.mk
+	$(MAKE) -C lib clean DEFMAKE=default-debug.mk
+	$(MAKE) -C daemon clean DEFMAKE=default-debug.mk
+	$(MAKE) -C command clean DEFMAKE=default-debug.mk
+	$(MAKE) -C scripts clean DEFMAKE=default-debug.mk
 	-rmdir debug
 	
-release-clean:
-	@cd include;  make clean DEFMAKE=default-release.mk
-	@cd lib;      make clean DEFMAKE=default-release.mk
-	@cd daemon;   make clean DEFMAKE=default-release.mk
-	@cd commands; make clean DEFMAKE=default-release.mk
-	@cd scripts;  make clean DEFMAKE=default-release.mk
-	-rmdir release
-
 #here
 install: debug-install
 
 debug-install:
 	@mkdir -p debug
-	@cd include;  make install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
-	@cd lib;      make install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
-	@cd daemon;   make install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
-	@cd commands; make install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
-	@cd scripts;  make install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
-
-release-install:
-	@mkdir -p release
-	@cd include;  make install DESTDIR=$(DESTDIR) DEFMAKE=default-release.mk
-	@cd lib;      make install DESTDIR=$(DESTDIR) DEFMAKE=default-release.mk
-	@cd daemon;   make install DESTDIR=$(DESTDIR) DEFMAKE=default-release.mk
-	@cd commands; make install DESTDIR=$(DESTDIR) DEFMAKE=default-release.mk
-	@cd scripts;  make install DESTDIR=$(DESTDIR) DEFMAKE=default-release.mk
+	$(MAKE) -C include install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
+	$(MAKE) -C lib install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
+	$(MAKE) -C daemon install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
+	$(MAKE) -C commands install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
+	$(MAKE) -C scripts install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk

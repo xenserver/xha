@@ -41,8 +41,6 @@ Date: April 18, 2008
         Top-level makefile of xha.
     default-debug.mk
         Various make defaults for debug build.
-    default-release.mk
-        Various make defaults for release build.
     commands/
         Source files of utility programs for the HA scripts.
     daemon/

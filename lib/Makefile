@@ -13,11 +13,14 @@ OBJS    +=config.o
 OBJS    +=error.o
 OBJS    +=weightio.o
 
-TARGET=$(HALIBS)($(OBJS))
+TARGET=$(HALIBS)
+
+$(HALIBS): $(OBJS)
+	@$(AR) rv $@ $(OBJS)
 
 all: $(TARGET)
 
 install: $(TARGET)
 
 clean:
-	rm -f $(HALIBS)
+	rm -f $(HALIBS) $(OBJS)
