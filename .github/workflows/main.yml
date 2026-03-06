@@ -32,7 +32,7 @@ jobs:
       image: ${{ matrix.image }}
     steps:
       - name: Install dependencies (dnf)
-        run: dnf install -y libxml2-devel xen-devel make gcc
+        run: dnf install -y libxml2-devel xen-devel make gcc gawk
       
       - name: Checkout code
         uses: actions/checkout@v4

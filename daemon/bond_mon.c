@@ -375,6 +375,7 @@ bm(
     static MTC_BOND_STATUS  bond_status = BOND_STATUS_NOERR;
     PCOM_DATA_BM            pbm;
 
+    log_thread_id("BM");
     do
     {
         log_maskable_debug_message(TRACE, "BM: bonding monitor thread activity log.\n");

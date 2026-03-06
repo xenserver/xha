@@ -209,7 +209,6 @@ main(
     int lockfiled, fd, sig, init_index;
     MTC_S32 phase;
     struct rlimit rlimit;
-    MTC_BOOLEAN licensed = TRUE;
     MTC_STATUS status;
     char buf[32];
     int index;
@@ -220,7 +219,9 @@ main(
     //  logrotate may send SIGHUP regardless of the state of xha. 
     //
 
-    sigignore(SIGHUP);
+    struct sigaction ignore = { 0 };
+    ignore.sa_handler = SIG_IGN;
+    sigaction(SIGHUP, &ignore, NULL);
         
     //  Initialize ha_config in BSS.
     //  (static initialization causes a warning for unknown reason)
@@ -268,14 +269,6 @@ main(
         main_exit(status);
     }
 
-    //  #### See if XenServer HA is properly licensed.
-
-    if (Xapi_license_check() < 0)
-    {
-        //  Log subsystem is not opened yet
-        licensed = FALSE;
-    }
-
     //  #### Close all inherited file descriptors.
 
     getrlimit(RLIMIT_NOFILE, &rlimit);
@@ -308,18 +301,6 @@ main(
             : log_message(MTC_LOG_DEBUG, "FIST point %s is not valid.\n", argv[index]);
     }
 
-    if (fist_on("init.license.fail"))
-    {
-        licensed = FALSE;
-    }
-
-    if (licensed == FALSE)
-    {
-        log_status(MTC_ERROR_IMPROPER_LICENSE, NULL);
-        log_terminate();
-        main_exit(MTC_ERROR_IMPROPER_LICENSE);
-    }
-
     //  #### Detach this process from the current process group,
     //       not to receive any TTY-originated signals, such as SIGINT.
 
@@ -336,7 +317,7 @@ main(
 
     for (sig = 1; sig < _NSIG; sig++)
     {
-        sigignore(sig);
+        sigaction(sig, &ignore, NULL);
     }
 
     //  #### Set resource limit of core size to max value
@@ -387,7 +368,6 @@ main(
 
     //  #### Initialize internal modules (phase 0 and 1)
 
-    init_index = 0;
     for (phase = 0; phase < 2; phase++)
     {
         for (init_index = 0; init_index < N_INIT_FUNCS; init_index++)
@@ -441,18 +421,19 @@ main(
 //
 //  sigcatch -
 //
-//  signal handler for sigset().
+//  signal handler for sigaction().
 //
 //  sigcatch may be invoked in any thread context in any time.
 //  Acquiring any lock which does not support recursive in this function causes deadlock.
+//
+//  action.sa_flags is 0, which means that the signal that triggerred the handler
+//  is automatically blocked already
 //
 
 MTC_STATIC void
 sigcatch(
     int signo)
 {
-    sigset(signo, sigcatch);
-
     switch (signo)
     {
     case SIGTERM:
@@ -512,10 +493,21 @@ post_phase_init(
         }
 
         //  Now it's time to catch signals.
+        static const int signals[] = { SIGTERM, SIGCHLD, SIGHUP };
+        sigset_t mask;
+        unsigned i;
+        struct sigaction action = { 0 };
+        action.sa_handler = sigcatch;
+        sigemptyset(&mask);
 
-        sigset(SIGTERM, sigcatch);
-        sigset(SIGCHLD, sigcatch);
-        sigset(SIGHUP, sigcatch);
+        for (i = 0; i < sizeof(signals) / sizeof(signals[0]); i++) {
+            int sig = signals[i];
+            sigaddset(&mask, sig);
+
+            sigaction(sig, &action, NULL);
+        }
+
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);
     }
 }
 

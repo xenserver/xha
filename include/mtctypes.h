@@ -55,6 +55,7 @@
 
 #include <sys/time.h>
 #include <stddef.h>
+#include <stdint.h>
 
 //
 //
@@ -128,11 +129,11 @@ typedef signed short    MTC_S16;    // 16 bits
 // However, int is 4 bytes for both.
 //
 
-typedef unsigned int   MTC_U32;    // 32 bits
-typedef signed int     MTC_S32;    // 32 bits
+typedef uint32_t   MTC_U32;    // 32 bits
+typedef int32_t     MTC_S32;    // 32 bits
 
-typedef unsigned long long MTC_U64; // 64 bits
-typedef long long MTC_S64;          // 64 bits
+typedef uint64_t MTC_U64; // 64 bits
+typedef int64_t MTC_S64;          // 64 bits
 
 
 //

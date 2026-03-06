@@ -195,7 +195,8 @@ extern void
 log_message(
     MTC_S32 priority,
     PMTC_S8 fmt,
-    ...);
+    ...)
+__attribute__((format (printf, 2, 3)));
 
 
 // log_bin
@@ -316,6 +317,28 @@ log_status(
 
 extern void
 log_fsync();
+
+//
+//
+//  NAME:
+//
+//      log_thread_id
+//
+//  DESCRIPTION:
+//
+//      Log thread ID.
+//
+//  paramaters
+//
+//      Thread name.
+//
+//  return value
+//
+//      none
+//
+extern void
+log_thread_id(
+    char *thread_name);
 
 #endif	// LOG_H
 

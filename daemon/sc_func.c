@@ -39,6 +39,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #include "mtctypes.h"
 #include "mtcerrno.h"
@@ -551,7 +552,7 @@ script_service_do_query_liveset(
             if (!xapi_approaching_timeout_reported ||
                 (logmask & MTC_LOG_MASK_SC_WARNING))
             {
-                log_message(MTC_LOG_WARNING, "SC: (%s) reporting \"Xapi approaching timeout\". now=%d start=%d.\n", __func__, now, xapimon->time_healthcheck_start);
+                log_message(MTC_LOG_WARNING, "SC: (%s) reporting \"Xapi approaching timeout\". now=%"PRId64" start=%"PRId64".\n", __func__, now, xapimon->time_healthcheck_start);
             }
             l->xapi_approaching_timeout = TRUE;
         }

@@ -156,8 +156,6 @@ main(
         exit(status_to_exit(MTC_ERROR_SF_OPEN));
     }
 
-    status = MTC_ERROR_INVALID_PARAMETER;
-
     if (strcmp(argv[1], "setinit") == 0)
     {
         status = global_init_state(sf);

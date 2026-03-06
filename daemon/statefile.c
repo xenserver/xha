@@ -502,6 +502,7 @@ sfthread(
 #define PSTATUS_SUCCESS 1
 #define PSTATUS_ERROR   2
 
+    log_thread_id("SF");
     int print_status = PSTATUS_NONE;
 
     last = _getms();

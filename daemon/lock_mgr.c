@@ -592,6 +592,7 @@ lock_mgr(
     PCOM_DATA_SF    psf;
     MTC_S32         index;
 
+    log_thread_id("LM");
     while (TRUE)
     {
         // wait until state-file is updated or request status is changed

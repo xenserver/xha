@@ -566,6 +566,7 @@ print_query_liveset(
            l->host[l->localhost_index].host_id + 12,
            l->host[l->localhost_index].host_id + 16,
            l->host[l->localhost_index].host_id + 20);
+    printf("    <HostIndex>%d</HostIndex>\n", l->localhost_index);
     printf("  </localhost>\n");
     if (l->status == LIVESET_STATUS_ONLINE) 
     {
@@ -578,6 +579,7 @@ print_query_liveset(
                    l->host[h_index].host_id + 12,
                    l->host[h_index].host_id + 16,
                    l->host[h_index].host_id + 20);
+            printf("    <HostIndex>%d</HostIndex>\n", h_index);
             printf("    <liveness>%s</liveness>\n", 
                    (l->host[h_index].liveness)?"TRUE":"FALSE");
             printf("    <master>%s</master>\n", 
@@ -610,6 +612,7 @@ print_query_liveset(
                    l->host[h_index].host_id + 12,
                    l->host[h_index].host_id + 16,
                    l->host[h_index].host_id + 20);
+            printf("      <HostIndex>%d</HostIndex>\n", h_index);
             printf("      <time_since_last_update_on_statefile>%d</time_since_last_update_on_statefile>\n", 
                    l->host[h_index].time_since_last_update_on_sf);
             printf("      <time_since_last_heartbeat>%d</time_since_last_heartbeat>\n",
