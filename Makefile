@@ -31,8 +31,8 @@ install: debug-install
 
 debug-install:
 	@mkdir -p debug
-	@cd include;  $(MAKE) install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
-	@cd lib;      $(MAKE) install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
-	@cd daemon;   $(MAKE) install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
-	@cd commands; $(MAKE) install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
-	@cd scripts;  $(MAKE) install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
+	$(MAKE) -C include install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
+	$(MAKE) -C lib install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
+	$(MAKE) -C daemon install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
+	$(MAKE) -C commands install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
+	$(MAKE) -C scripts install DESTDIR=$(DESTDIR) DEFMAKE=default-debug.mk
