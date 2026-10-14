@@ -53,6 +53,7 @@
 #include <execinfo.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <limits.h>
 
 
 #include "mtctypes.h"
@@ -89,6 +90,21 @@ PMTC_S8 monthnames[] = {
 };
 
 
+static char hostname[HOST_NAME_MAX + 1];
+
+// log_set_hostname
+//
+//  Cache the hostname for log lines.
+//  Call before threads start, or with the write lock held.
+//
+
+static void log_set_hostname(void)
+{
+    if (gethostname(hostname, sizeof(hostname)) != 0)
+        strcpy(hostname, "-");
+    hostname[HOST_NAME_MAX] = '\0';
+}
+
 //
 // Global functions (Lock manager interfaces)
 //
@@ -110,6 +126,8 @@ MTC_S32 log_initialize()
     MTC_S32 ret;
 
     openlog(MTC_XHA_MODULE_NAME, LOG_PID, LOG_DAEMON);
+
+    log_set_hostname();
 
     fpLogfile = fopen(MTC_LOG_FILE_NAME, "a");
     if (fpLogfile == NULL)
@@ -154,6 +172,8 @@ MTC_S32 log_initialize()
 void log_reopen()
 {
     pthread_rwlock_wrlock(&lock);
+
+    log_set_hostname();
 
     if (fpLogfile)
     {
@@ -245,10 +265,12 @@ void log_message(MTC_S32 priority, PMTC_S8 fmt, ...)
             now = time(NULL);
             ptm = localtime(&now);
             flockfile(fpLogfile);
-            fprintf(fpLogfile, "%s %02d %02d:%02d:%02d %s %04d [%s] ",
+            fprintf(fpLogfile, "%s %02d %02d:%02d:%02d %s %04d %s [%s] ",
                     monthnames[ptm->tm_mon], ptm->tm_mday,
                     ptm->tm_hour, ptm->tm_min, ptm->tm_sec,
-                    ptm->tm_zone, 1900 + ptm->tm_year, prioritynames[i].c_name);
+                    ptm->tm_zone, 1900 + ptm->tm_year,
+                    hostname,
+                    prioritynames[i].c_name);
     
             va_start(ap, fmt);
             vfprintf(fpLogfile, fmt, ap);
